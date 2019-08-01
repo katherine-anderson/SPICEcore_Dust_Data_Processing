@@ -1,35 +1,38 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[126]:
+# In[1]:
 
 
 # --------------------------------------------------------------------------------------
 #                        SPICE REMOVE CONTAMINATION SCRIPT
 #               Removes anomalies and outliers from the error-free CFA data
 #
-#    - Loads raw, unfiltered CFA with depth corrections. Gets CPP and particle conc.
 #    - Reads CFA dataframe (with mechanical errors removed)
-#    - Calculates CPP and particle conc. for the full core and the Holocene
+#    - Calculates CPP and particle concentration (bins 1.1-10) for the full core
 #    - Counts and NaNs all rows with a 'hump-shaped' PSD anomaly
-#    - Creates outlier removal scenarios
+#    - Creates MAD outlier removal scenarios
+#    - Removes integral outliers (after Aaron)
 #    - Preserves known dust events during 'hump' and outlier removal
+#
+#    - Loads raw, unfiltered CFA with depth corrections. Gets CPP and particle conc.
 #    - Creates a series of plots to evaluate different outlier removal scenarios
 #    - Creates before & after plots for the data processing
 #
-# Katie Anderson, 7/10/19
+# Katie Anderson, 8/1/19
 # ---------------------------------------------------------------------------------------
 
 
-# In[127]:
+# In[17]:
 
 
-from scipy.io import loadmat
-import numpy as np
+from   scipy.io import loadmat
+import numpy  as np
+from numpy import trapz
 import pandas as pd
 import csv
 import os
-from datetime import date
+from   datetime import date
 import matplotlib.pyplot as plt
 import statistics
 
@@ -43,7 +46,151 @@ os.chdir('C:\\Users\\katie\\OneDrive\\Documents\\SPICE\\Scripts')
 get_ipython().run_line_magic('run', '"SPICE Data Processing Functions.ipynb"')
 
 
-# In[128]:
+# In[22]:
+
+
+# ----------------------------------------------------------------------------
+#                               CFA FILE PREP
+#               Load Phase 1 data, Get Dust & Volcanic Events
+# ----------------------------------------------------------------------------
+# Load complete CFA file after mechanical error removal (-2/+6 yr volcanic buffer)
+cfa = pd.read_csv('../Data/Cleaned_CFA_Phase1_2019-07-24.csv', header = 0)
+
+# This version has only a +/- 2 year buffer around volcanic events
+#cfa = pd.read_csv('../Data/Cleaned_CFA_Phase1_2019-07-19.csv', header = 0) 
+del cfa['Unnamed: 0']
+
+# Load depths of real dust events
+dust_events = pd.read_excel('../Data/Dust Events.xlsx')
+# Only keep the columns with the depth ranges
+dust_events = dust_events.loc[:, 'Dust Event Start (m)':'Dust Event End (m)'].copy()
+
+# Label all rows during known dust events
+# Add Y/N 'Dust Event?' column. Default to false.
+cfa['Dust Event?'] = False
+# Get the row indices of all measurements within dust events
+dust_rows = label_dust_events(cfa, dust_events)
+# Change all 'Dust Event?' values in those rows to True
+cfa.loc[dust_rows, 'Dust Event?'] = True
+
+# Get the row indices of all measurements within volcanic events
+volc_rows = cfa[(cfa['Volcanic Event?'] == True)].index.values.tolist()
+
+# Get particle concentrations
+# Change this if we decide to include smallest & largest bins
+sum_columns = ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', 
+               '1.9', '2', '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9',
+               '3.2', '3.6', '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', 
+               '9', '10']
+# Set skipna to False, otherwise, rows with all NaNs will sum to 0
+cfa['Sum 1.1-10'] = cfa[sum_columns].sum(axis = 1, skipna = False)
+
+# Add CPP column to CFA dataframe. Function will ask to include/exclude bins 1 and 12
+cfa['CPP'] = find_cpp(cfa)
+
+
+# In[23]:
+
+
+# ----------------------------------------------------------------------------
+#                                        PART 2:
+#                        CFA DATA OUTLIER & CONTAMINATION REMOVAL
+# ----------------------------------------------------------------------------
+
+original_length = 438211 # From the last script
+print('CFA dataset length after error removal:', original_length)
+print('\n')
+
+# 1) Identify and remove hump-shaped PSD anomalies
+
+# Find humps for all CFA depths
+humps = find_humps(cfa, 0, 1752)
+
+# PRESERVE KNOWN DUST EVENTS
+# Remove all rows in real dust events from the hump list
+bad_rows = humps.index.difference(dust_rows)
+# Remove all rows in real volcanic events from the hump list
+bad_rows = humps.index.difference(volc_rows)
+
+# NaN values in remaining rows, except boolean columns
+cfa.loc[bad_rows, 'Depth (m)': '12'] = np.nan
+cfa.loc[bad_rows, 'Age b 1950'] = np.nan
+cfa.loc[bad_rows, 'CPP']        = np.nan
+
+# Print number of measurements removed
+print('\nHump measurements removed: ', len(bad_rows))
+# Update dataset length
+original_length = original_length - len(bad_rows)
+
+
+# In[24]:
+
+
+# 2) Identify and remove particle concentration & CPP outliers, using MAD
+
+# Set # of measurements to use for background medians
+window = 500
+# Set threshold for accepted Median Absolute Deviations (MAD).
+threshold = 2
+# Make a new copy of the CFA data to ensure that the data cleaning doesn't change original data
+new_cfa = cfa.copy()
+
+# Remove overlapping concentration & CPP outliers
+# Inputs: CFA data, dust event indices, volcanic event indices, background window, and MAD threshold
+new_cfa, num_outliers = remove_outliers_MAD(new_cfa, dust_rows, volc_rows, window, threshold)
+
+print('\nMAD outliers removed: ', num_outliers)
+
+
+# In[25]:
+
+
+# 3) Identify and remove particle concentration & CPP outliers, using 2-pt. integrals
+
+bad_rows = remove_outliers_integrals(new_cfa, 2, dust_rows, volc_rows)
+
+# NaN values in remaining rows, except boolean columns
+new_cfa.loc[bad_rows, 'Depth (m)':'12']   = np.nan
+new_cfa.loc[bad_rows, 'Age b 1950']       = np.nan
+new_cfa.loc[bad_rows, 'Sum 1.1-10':'CPP'] = np.nan
+
+print('\nIntegral outliers removed:', len(bad_rows))
+
+
+# In[27]:
+
+
+# 4) Compute summary statistics and export data
+
+print('Final CFA dataset length:', original_length - num_outliers - len(bad_rows))
+
+print('\nPhase 1 Cleaning Results:')
+summary_statistics(cfa)
+print('\nPhase 2 Cleaning Results:')
+summary_statistics(new_cfa)
+
+#cfa.to_csv('../Data/Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[109]:
+
+
+# EVERYTHING BELOW IS WORK SPACE
+
+
+# In[3]:
 
 
 # ----------ORIGINAL CFA DATA PREP--------------------------#
@@ -51,16 +198,16 @@ get_ipython().run_line_magic('run', '"SPICE Data Processing Functions.ipynb"')
 
 # Get concentrations and CPP (before filtering) for plotting
 
-# Load Matlab raw, unfiltered CFA file
-mat = loadmat('../Data/CFA_FullCore_Unfiltered.mat')
+# Load Matlab raw, unfiltered, depth-corrected CFA file
+mat = loadmat('../Data/CFA_Unfiltered_Synchronized.mat')
 # Import main variable from Matlab file
-mdata = mat['K']
+mdata = mat['FinalCFA']
 # Create dataframe and add 1st column
 original_cfa = pd.DataFrame({'Depth (m)':mdata[:,0]})
 # Add remaining columns and data to the dataframe
 original_cfa['Flow Rate'] = mdata[:,1]
 original_cfa['ECM'] = mdata[:,2]
-original_cfa['1'] = mdata[:,3]
+original_cfa['1']   = mdata[:,3]
 original_cfa['1.1'] = mdata[:,4]
 original_cfa['1.2'] = mdata[:,5]
 original_cfa['1.3'] = mdata[:,6]
@@ -90,199 +237,102 @@ original_cfa['8.1'] = mdata[:,29]
 original_cfa['9']   = mdata[:,30]
 original_cfa['10']  = mdata[:,31]
 original_cfa['12']  = mdata[:,32]
-
-# Load Matlab file with most updated CFA depths
-mat = loadmat('../Data/FinalCFA_1751_Fullcore.mat')
-mdata = mat['FinalCFA']
-# Create dataframe and add 1st column
-cfa_newDepths = pd.DataFrame({'Depth (m)':mdata[:,0]})
-
-# Make a column with the original depths
-original_cfa['Original Depth (m)'] = original_cfa['Depth (m)']
-# Copy updated depths into unfiltered CFA depths
-original_cfa['Depth (m)'] = cfa_newDepths['Depth (m)']
+original_cfa['Raw Depth'] = mdata[:,33]
 
 # Get original particle concentrations for plotting later
 sum_columns = ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', 
                '1.9', '2', '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9',
                '3.2', '3.6', '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', 
                '9', '10']
-original_sums = original_cfa[sum_columns].sum(axis = 1)
+original_cfa['Sum 1.1-10'] = original_cfa[sum_columns].sum(axis = 1, skipna = False)
 
 # Get original CPP for plotting later
 original_cfa['CPP'] = find_cpp(original_cfa)
 
 
-# In[129]:
+# In[61]:
 
 
-# --------------------CFA FILE PREP--------------------------#
+# Comparing different outlier I.D functions
 
-# Load complete CFA file after mechanical error removal
-cfa = pd.read_csv('../Data/Cleaned_CFA_Phase1_2019-07-10.csv', header = 0) 
-del cfa['Unnamed: 0']
-# Get a copy of only the Holocene data, for outlier comparisons
-cfa_holocene = cfa.loc[0:214959, :].copy()
+window = 500
+threshold = 2
+# Need to make a copy to ensure that the scenario doesn't change original data
+#testcfa  = cfa.copy()
+testcfa2 = cfa.copy()
+testcfa3 = cfa.copy()
 
-# Load depths of real dust events
-dust_events = pd.read_excel('../Data/Dust Events.xlsx')
-# Only keep the columns with the depth ranges
-dust_events = dust_events.loc[:, 'Dust Event Start (m)':'Dust Event End (m)'].copy()
-
-# Label all rows during known dust events
-# Add Y/N 'Dust Event?' column. Default to false.
-cfa['Dust Event?'] = False
-# Get the row indices of all measurements within dust events
-dust_rows = label_dust_events(cfa, dust_events)
-# Change all 'Dust Event?' values in those rows to True
-cfa.loc[dust_rows, 'Dust Event?'] = True
+# Original outlier removal function
+#scenario = test_threshold_old(testcfa, dust_rows, window, stdev)
+# Updated outlier removal function
+scenario2 = test_threshold_stdev(testcfa2, dust_rows, window, threshold)
+# V3
+scenario3, num_outliers = remove_outliers_MAD(testcfa3, dust_rows, volc_rows, window, threshold)
 
 
-# In[131]:
+# In[65]:
 
 
-# ----------------------------------------------------------------------------
-#                                        PART 2:
-#                        CFA DATA OUTLIER & CONTAMINATION REMOVAL
-# ----------------------------------------------------------------------------
-
-original_length = 438217 # From the last script
-holocene_length = 214960
-print('CFA dataset length after error removal:', original_length)
-
-# 1) Identify and remove hump-shaped PSD anomalies
-
-# Add CPP column to CFA dataframe. Function will ask to include/exclude bins 1 and 12
-cfa['CPP'] = find_cpp(cfa)
-# Do this for the Holocene-only dataframe too
-cfa_holocene['CPP'] = find_cpp(cfa_holocene)
-
-# Find humps for all CFA depths
-print('\nPSD hump anomalies-- Full core')
-humps = find_humps(cfa, 0, 1752)
-print('\nPSD hump anomalies-- Holocene')
-humps_holocene = find_humps(cfa_holocene, 0, 1752)
-
-# PRESERVE KNOWN DUST EVENTS
-# Remove all rows in real dust events from the hump list
-bad_rows = humps.index.difference(dust_rows)
-
-# NaN values in remaining rows, except boolean columns
-cfa.loc[bad_rows, 'Depth (m)': 'Original Depth (m)'] = np.nan
-cfa.loc[bad_rows, 'Age b 1950'] = np.nan
-cfa.loc[bad_rows, 'CPP'] = np.nan
-
-bad_rows = humps_holocene.index.difference(dust_rows)
-# NaN values in remaining rows, except boolean columns
-cfa_holocene.loc[bad_rows, 'Depth (m)':'Original Depth (m)'] = np.nan
-cfa_holocene.loc[bad_rows, 'Age b 1950'] = np.nan
-cfa_holocene.loc[bad_rows, 'CPP'] = np.nan
-
-# 2) Identify and remove particle concentration & CPP outliers
-# Get particle concentrations
-# Change this if we decide to include smallest & largest bins
-sum_columns = ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', 
-               '1.9', '2', '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9',
-               '3.2', '3.6', '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', 
-               '9', '10']
-# Set skipna to False, otherwise, rows with all NaNs will sum to 0
-cfa['Sum 1.1-10']          = cfa[sum_columns].sum(axis = 1, skipna = False)
-cfa_holocene['Sum 1.1-10'] = cfa_holocene[sum_columns].sum(axis = 1, skipna = False)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-# EVERYTHING BELOW IS A WORK IN PROGRESS
+# Print summary statistics before & after phase 1 cleaning
+print('--CFA data after error removal--')
+summary_statistics(cfa)
+#print('\n--CFA data after original outlier removal--')
+#summary_statistics(scenario)
+print('\n--CFA data after st dev from mean removal--')
+summary_statistics(scenario2)
+print('\n--CFA data after MAD outler removal--')
+summary_statistics(scenario3)
 
 
 # In[13]:
 
 
-# Create different scenarios for outlier removal
+# Comparing different outlier I.D functions
+# Window of 500 seems to do the best job. Not a lot of difference between different windows, except for at large events.
 
-# Set values for # of measurements to use to determine background levels
-window1 = 500
-#window2 = 100
-#window3 = 1000
-# Set threshold # of standard deviations from the background levels
-stdev1  = 2
-#stdev2  = 3
+threshold = 2
+# Need to make a copy to ensure that the scenario doesn't change original data
+testcfa  = cfa.copy()
+testcfa2 = cfa.copy()
+testcfa3 = cfa.copy()
+testcfa4 = cfa.copy()
 
-# Make another copy of the CFA data to keep it from being affected by the function
-# Make as many copies as there are scenarios, to be sure that each scenario is 100% its own
-#test_cfa1 = cfa_holocene.copy()
-#test_cfa2 = cfa_holocene.copy()
-#test_cfa3 = cfa_holocene.copy()
-#test_cfa4 = cfa_holocene.copy()
-#test_cfa5 = cfa_holocene.copy()
-#test_cfa6 = cfa_holocene.copy()
+# Testing different backgrounds
+window50, num_outliers = remove_outliers_MAD(testcfa, dust_rows, volc_rows, 50, threshold)
+window100, num_outliers = remove_outliers_MAD(testcfa2, dust_rows, volc_rows, 100, threshold)
+window500, num_outliers = remove_outliers_MAD(testcfa3, dust_rows, volc_rows, 500, threshold)
+window1000, num_outliers = remove_outliers_MAD(testcfa4, dust_rows, volc_rows, 1000, threshold)
 
-# Call function to create new dataframes sans outliers
-# Inputs: CFA dataframe, # of measurements to use for background, threshold # of standard deviations
-#scenario1 = test_threshold(test_cfa1, window1, stdev1)
-#scenario2 = test_threshold(test_cfa2, window2, stdev1)
-#scenario3 = test_threshold(test_cfa3, window3, stdev1)
 
-#scenario4 = test_threshold(test_cfa4, window1, stdev2)
-#scenario5 = test_threshold(test_cfa5, window2, stdev2)
-#scenario6 = test_threshold(test_cfa6, window3, stdev2)
+# In[14]:
+
+
+print('\n--CFA data after error removal--')
+summary_statistics(cfa)
+# Print summary statistics for different windows
+print('\n--Window50--')
+summary_statistics(window50)
+print('\n--Window100--')
+summary_statistics(window100)
+print('\n--Window500--')
+summary_statistics(window500)
+print('\n--Window1000--')
+summary_statistics(window1000)
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # In[16]:
-
-
-# Create different scenarios for outlier removal in the deep core
-
-window = 100
-stdev = 2
-
-scenario = test_threshold(cfa, window, stdev)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[35]:
-
-
-scenario.loc[335505:335509, :]
-
-
-# In[36]:
-
-
-cfa.loc[335505:335509, :]
-
-
-# In[7]:
 
 
 # ----------------------------------------------------------------------------
@@ -296,7 +346,133 @@ cfa.loc[335505:335509, :]
 #all_ties = pd.read_excel('../Data/Final_Ties.xlsx')
 
 # Load complete Holocene volcanic record
-#holocene_volc = pd.read_excel('../Data/Holocene Volcanic Record.xlsx')
+volcanic_record = pd.read_excel('../Data/Volcanic Record.xlsx')
+
+
+# In[60]:
+
+
+# PARTICLE CONCENTRATION OUTLIER REMOVAL WITH DIFFERENT WINDOWS
+# BY DEPTH 
+
+# Age 9240-9480 ~= Depth 680-690
+# 975 to 995 example of good volcanic preservation
+xmin = 1275
+xmax = 1276
+ymin = 0
+ymax = 40000
+
+fig = plt.figure(figsize = (15,10))
+ax1 = fig.add_subplot(411)
+ax2 = fig.add_subplot(412)
+ax3 = fig.add_subplot(413)
+ax4 = fig.add_subplot(414)
+fig.subplots_adjust(hspace = 0.3)
+
+ax1.plot(original_cfa['Depth (m)'], original_cfa['Sum 1.1-10'], color = 'black');
+ax1.plot(cfa['Depth (m)'], cfa['Sum 1.1-10'], color = 'grey');
+ax1.plot(window50['Depth (m)'], window50['Sum 1.1-10'], color = 'green');    
+ax1.set_ylabel('Conc. (#/uL)', fontsize = 14);
+ax1.set_xlim(xmin, xmax);
+ax1.set_ylim(ymin, ymax);
+ax1.set_title('Background: 50 measurements', fontsize = 14);
+ax1.axes.get_xaxis().set_visible(False)
+
+ax2.plot(original_cfa['Depth (m)'], original_cfa['Sum 1.1-10'], color = 'black');
+ax2.plot(cfa['Depth (m)'], cfa['Sum 1.1-10'], color = 'grey');
+ax2.plot(window100['Depth (m)'], window100['Sum 1.1-10'], color = 'green');
+#for event in volcanic_record['Start Year (b1950)']:
+#    if event == np.nan or event < xmin or event > xmax: continue
+#    else:
+#        end = event - 6
+#        start = event + 2
+#        ax2.axvspan(start, end, facecolor = 'blue', alpha = 0.1)
+#        ax2.vlines(event, 0, 700000, color = 'blue')
+mylabels = ['Orig. Conc.', 'Filtered Conc.', 'Cleaned Conc. 2.0', 'Volcanic Event']
+ax2.legend(mylabels, fontsize = 14)
+ax2.set_ylabel('Conc. (#/uL)', fontsize = 14);
+ax2.set_xlim(xmin, xmax);
+ax2.set_ylim(ymin, ymax);
+ax2.set_title('Background: 100 measurements', fontsize = 14);
+ax2.axes.get_xaxis().set_visible(False)
+
+ax3.plot(original_cfa['Depth (m)'], original_cfa['Sum 1.1-10'], color = 'black');
+ax3.plot(cfa['Depth (m)'], cfa['Sum 1.1-10'], color = 'grey');
+ax3.plot(window500['Depth (m)'], window500['Sum 1.1-10'], color = 'green');
+ax3.set_ylabel('Conc. (#/uL)', fontsize = 14);
+ax3.set_xlim(xmin, xmax);
+ax3.set_ylim(ymin, ymax);
+ax3.set_title('Background: 500 measurements', fontsize = 14);
+ax3.axes.get_xaxis().set_visible(False)
+
+ax4.plot(original_cfa['Depth (m)'], original_cfa['Sum 1.1-10'], color = 'black');
+ax4.plot(cfa['Depth (m)'], cfa['Sum 1.1-10'], color = 'grey');
+ax4.plot(window1000['Depth (m)'], window1000['Sum 1.1-10'], color = 'green');    
+ax4.set_ylabel('Conc. (#/uL)', fontsize = 14);
+ax4.set_xlim(xmin, xmax);
+ax4.set_ylim(ymin, ymax);
+ax4.set_title('Background: 1000 measurements', fontsize = 14);
+ax4.set_xlabel('Depth (m)', fontsize = 14);
+
+#plt.savefig('../Figures/New Windows 1275-1276 m.png')
+
+
+# In[ ]:
+
+
+
+
+
+# In[38]:
+
+
+# BEFORE & AFTER PLOTS OF PARTICLE CONCENTRATION AND CPP, updated scenario
+
+xmin = 7700
+xmax = 7800
+ymin = 0
+ymax = 100
+
+fig = plt.figure(figsize = (15,7))
+ax1 = fig.add_subplot(211)
+ax2 = fig.add_subplot(212)
+fig.subplots_adjust(hspace = 0.05)
+
+ax1.plot(cfa['Age b 1950'], cfa['Sum 1.1-10'], c = 'grey');
+ax1.plot(scenario2['Age b 1950'], scenario2['Sum 1.1-10'], color = 'teal')
+ax1.plot(scenario3['Age b 1950'], scenario3['Sum 1.1-10'], color = 'purple')
+
+for start in volcanic_record['Start Year (b1950)']:
+    if start == np.nan: continue
+    elif start < xmin or start > xmax: continue
+    else:
+        end = start - 8
+        event = start - 2
+        ax1.axvspan(start, end, facecolor = 'blue', alpha = 0.1)
+        ax1.vlines(event, 0, 700000, color = 'blue')
+    
+mylabels = ['Phase 1', 'StDev from Mean', 'MAD', 'Volcanic Event'];
+ax1.legend(mylabels, fontsize = 14);
+ax1.set_ylabel('Dust Concentration (#/uL)');
+ax1.set_xlim(xmin, xmax);
+ax1.set_ylim(ymin, ymax);
+ax1.axes.get_xaxis().set_visible(False)
+
+ax2.plot(cfa['Age b 1950'], cfa['CPP'], c = 'grey');
+ax2.plot(scenario2['Age b 1950'], scenario2['CPP'], color = 'teal')
+ax2.plot(scenario3['Age b 1950'], scenario3['CPP'], color = 'purple')
+ax2.set_ylabel('Coarse Particles (%)');
+ax2.set_xlim(xmin, xmax);
+ax2.set_ylim(0,50);
+ax2.set_xlabel('Age (b1950)');
+
+#plt.savefig('../Figures/New Outliers 1233-1235.png')
+
+
+# In[ ]:
+
+
+
 
 
 # In[65]:
@@ -360,75 +536,6 @@ ax3.set_yticks([0, 20, 40]);
 
 
 
-
-
-# In[71]:
-
-
-# PARTICLE CONCENTRATION OUTLIER REMOVAL WITH DIFFERENT BACKGROUNDS
-# BY AGE 
-
-# Age 9240-9480 ~= Depth 680-690
-# 975 to 995 example of good volcanic preservation
-xmin = 2670
-xmax = 2720
-ymin = 0
-ymax = 30
-
-fig = plt.figure(figsize = (15,10))
-ax1 = fig.add_subplot(311)
-ax2 = fig.add_subplot(312)
-ax3 = fig.add_subplot(313)
-fig.subplots_adjust(hspace = 0.3)
-
-ax1.plot(cfa_holocene['Age b 1950'], cfa_holocene['Sum 1.1-10'], color = 'grey');
-ax1.plot(scenario1['Age b 1950'], scenario1['Sum 1.1-10'], color = 'green');
-
-for start in holocene_volc['Buffered Start Year (b1950)']:
-    end = start - 8
-    midpoint = (start + end) / 2
-    ax1.axvspan(start, end, facecolor = 'blue', alpha = 0.1)
-    ax1.vlines(midpoint, 0, 700000, color = 'blue')
-    
-ax1.set_ylabel('Conc. (#/uL)', fontsize = 14);
-mylabels = ['Filtered Conc.', 'Cleaned Conc.', 'Volcanic Event Window']
-ax1.legend(mylabels, fontsize = 14)
-ax1.set_xlim(xmin, xmax);
-ax1.set_ylim(ymin, ymax);
-ax1.set_title('Background: ' + str(window1) + ' measurements', fontsize = 14);
-
-
-ax2.plot(cfa_holocene['Age b 1950'], cfa_holocene['Sum 1.1-10'], color = 'grey');
-ax2.plot(scenario2['Age b 1950'], scenario2['Sum 1.1-10'], color = 'green');
-
-for start in holocene_volc['Buffered Start Year (b1950)']:
-    end = start - 8
-    midpoint = (start + end) / 2
-    ax2.axvspan(start, end, facecolor = 'blue', alpha = 0.1)
-    ax2.vlines(midpoint, 0, 700000, color = 'blue')
-    
-ax2.set_ylabel('Conc. (#/uL)', fontsize = 14);
-ax2.set_xlim(xmin, xmax);
-ax2.set_ylim(ymin, ymax);
-ax2.set_title('Background: ' + str(window2) + ' measurements', fontsize = 14);
-
-
-ax3.plot(cfa_holocene['Age b 1950'], cfa_holocene['Sum 1.1-10'], color = 'grey');
-ax3.plot(scenario3['Age b 1950'], scenario3['Sum 1.1-10'], color = 'green');
-
-for start in holocene_volc['Buffered Start Year (b1950)']:
-    end = start - 8
-    midpoint = (start + end) / 2
-    ax3.axvspan(start, end, facecolor = 'blue', alpha = 0.1)
-    ax3.vlines(midpoint, 0, 700000, color = 'blue')
-    
-ax3.set_ylabel('Conc. (#/uL)', fontsize = 14);
-ax3.set_xlabel('Age b 1950', fontsize = 14);
-ax3.set_xlim(xmin, xmax);
-ax3.set_ylim(ymin, ymax);
-ax3.set_title('Background: ' + str(window3) + ' measurements', fontsize = 14);
-
-#plt.savefig('../Figures/Another example, preserved.png')
 
 
 # In[ ]:
@@ -512,8 +619,8 @@ ax2 = fig.add_subplot(212)
 fig.subplots_adjust(hspace = 0.05)
 
 
-ax1.plot(original_cfa['Depth (m)'], original_sums, c = 'black');
-ax1.plot(scenario2['Depth (m)'], scenario2['Sum 1.1-10'], color = 'red')
+ax1.plot(original_cfa['Depth (m)'], original_cfa['Sum 1.1-10'], c = 'black');
+ax1.plot(cfa['Depth (m)'], cfa['Sum 1.1-10'], color = 'red')
 ax1.set_ylabel('Dust Concentration (#/uL)', fontsize = 18);
 mylabels = ['Original', 'Cleaned'];
 ax1.legend(mylabels, fontsize = 16);
@@ -524,7 +631,7 @@ ax1.set_yticks([0, 25, 50]);
 ax1.axes.get_xaxis().set_visible(False)
 
 ax2.plot(original_cfa['Depth (m)'], original_cfa['CPP'], c = 'black');
-ax2.plot(scenario2['Depth (m)'], scenario2['CPP'], color = 'red')
+ax2.plot(cfa['Depth (m)'], cfa['CPP'], color = 'red')
 ax2.set_ylabel('Coarse Particles (%)', fontsize = 18);
 ax2.set_xlim(xmin, xmax);
 ax2.set_ylim(0, 80);
@@ -532,7 +639,7 @@ ax2.tick_params(labelsize = 14);
 ax2.set_yticks([0, 50, 100]);
 ax2.set_xlabel('Depth (m)', fontsize = 18);
 
-#plt.savefig('../Figures/Example for 203.2.png')
+#plt.savefig('../Figures/682-683 for proposal.png')
 
 
 # In[ ]:
@@ -628,56 +735,22 @@ cfa.loc[286510:286520, 'Depth (m)':'1.2']
 cfa.loc[287050:287052, 'Depth (m)':'1.2']
 
 
-# In[26]:
+# In[38]:
 
 
-# Plotting real dust events
-xmin = 349
-xmax = 350
-
-fig = plt.figure(figsize = (15,10));
-ax1 = fig.add_subplot(311);
-ax2 = fig.add_subplot(312);
-ax3 = fig.add_subplot(313);
-#fig.subplots_adjust(hspace = 0.1);
-
-ax1.plot(original_cfa['Depth (m)'], original_cfa['Flow Rate'], c = 'black');
-ax1.plot(cfa['Depth (m)'], cfa['Flow Rate'], c = 'green');
-ax1.set_xlim(xmin, xmax);
-ax1.set_ylim(-1000,4000)
-ax1.axes.get_xaxis().set_visible(False);
-
-ax2.plot(original_cfa['Depth (m)'], original_cfa['ECM'], c = 'black');
-ax2.plot(cfa['Depth (m)'], cfa['ECM'], c = 'green');
-ax2.set_xlim(xmin, xmax);
-ax2.set_ylim(0, 3);
-#ax2.set_yticks([0,50,100])
-#ax2.set_xticks([0, 400, 800, 1200, 1600])
-#ax2.set_ylabel('Coarse Particles (%)', fontsize = 18);
-#ax2.tick_params(labelsize = 14);
-
-ax3.plot(original_cfa['Depth (m)'], original_sums, c = 'black');
-ax3.plot(cfa['Depth (m)'], cfa['Sum 1.1-10'], c = 'green');
-ax3.set_ylim(0,100)
-ax3.set_xlim(xmin, xmax);
-#plt.savefig('../Figures/Original Time Series.png')
+# Adding mode in here
+modes = cfa.loc[:, '1.1':'10'].idxmax(axis = 1).astype(float)
 
 
-# In[9]:
+# In[7]:
 
 
-cfa.head()
-
-
-# In[20]:
-
-
-# 
-xmin = 14
-xmax = 22
+# Final conc. dataset
+xmin = 0
+xmax = 50
 
 age_kyr = cfa['Age b 1950'].div(1000)
-running_med_conc = cfa['Sum 1.1-10'].rolling(50, min_periods = 50).median()
+running_med_conc = cfa['Sum 1.1-10'].rolling(50).median()
 running_med_cpp  = cfa['CPP'].rolling(50).median()
 
 fig = plt.figure(figsize = (15,10));
@@ -685,30 +758,30 @@ ax1 = fig.add_subplot(211);
 #ax2 = fig.add_subplot(212);
 #fig.subplots_adjust(hspace = 0.1);
 
-ax1.plot(age_kyr, cfa['Sum 1.1-10'], c = 'grey');
+ax1.plot(age_kyr, cfa['Sum 1.1-10'], c = 'purple', alpha = 0.2);
 ax1.plot(age_kyr, running_med_conc, c = 'purple')
 ax1.set_xlim(xmin, xmax);
 ax1.tick_params(labelsize = 14);
 #ax1.set_yticks([0, 5000, 10000]);
-#ax1.set_ylim(-1000, 10000)
+#ax1.set_ylim(0, 100)
 ax1.set_yscale("log")
 ax1.set_ylabel('Concentration (#/uL)', fontsize = 18);
 #ax1.axes.get_xaxis().set_visible(False);
-#ax1.set_xticks([0, 10, 16, 18, 20, 30, 40, 50])
 ax1.set_xlabel('Kyr b 1950', fontsize = 18);
 
-#ax2.plot(age_kyr, cfa['CPP'], c = 'grey');
+#ax2.plot(age_kyr, cfa['CPP'], c = 'purple', alpha = 0.2);
 #ax2.plot(age_kyr, running_med_cpp, c = 'purple')
-#ax2.set_xlim(xmin, xmax);
-#ax2.set_ylim(0,50);
-#ax2.set_ylim(0, 100);
-#ax2.set_yticks([0,50,100])
-#ax2.set_xticks([0, 10, 16, 18, 20, 30, 40, 50])
 #ax2.set_ylabel('Coarse Particles (%)', fontsize = 18);
+
+#ax2.plot(age_kyr, modes, c = 'purple')
+#ax2.set_ylabel('Modal Size (um)', fontsize = 18)
+
+#ax2.set_xlim(xmin, xmax);
+#ax2.set_ylim(0, 10);
 #ax2.tick_params(labelsize = 14);
 #ax2.set_xlabel('Kyr b 1950', fontsize = 18);
 
-#plt.savefig('../Figures/Missing LGM data.png')
+#plt.savefig('../Figures/Glacial_RunningMedian_LogScale.png')
 
 
 # In[ ]:
