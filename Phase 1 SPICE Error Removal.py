@@ -29,7 +29,7 @@
 
 from   scipy.io import loadmat
 from   scipy    import interpolate
-import numpy as np
+import numpy  as np
 import pandas as pd
 import csv
 import os
@@ -45,15 +45,21 @@ os.chdir('C:\\Users\\katie\\OneDrive\\Documents\\SPICE\\Scripts')
 get_ipython().run_line_magic('run', '"SPICE Data Processing Functions.ipynb"')
 
 
-# In[3]:
+# In[5]:
 
 
 # --------------------CFA FILE PREP--------------------------#
 
-# Load Matlab raw, unfiltered CFA file
-mat = loadmat('../Data/CFA_FullCore_Unfiltered.mat')
+# Load Matlab raw, unfiltered, depth-corrected CFA file
+#mat = loadmat('../Data/CFA_Unfiltered_Synchronized.mat')
 # Import main variable from Matlab file
-mdata = mat['K']
+#mdata = mat['FinalCFA']
+
+# Original files I've been using. Give different results than the unfiltered_synchronized file...
+#mat = loadmat('../Data/CFA_FullCore_Unfiltered.mat') 
+mat = loadmat('../Data/CFA_Unfiltered_Synchronized_7_24_19.mat')
+mdata = mat['FinalCFA']
+
 # Create dataframe and add 1st column
 cfa = pd.DataFrame({'Depth (m)':mdata[:,0]})
 # Add remaining columns and data to the dataframe
@@ -90,22 +96,8 @@ cfa['9']   = mdata[:,30]
 cfa['10']  = mdata[:,31]
 cfa['12']  = mdata[:,32]
 
-# Load Matlab file with most updated CFA depths
-mat = loadmat('../Data/FinalCFA_1751_Fullcore.mat')
-mdata = mat['FinalCFA']
-# Create dataframe and add 1st column
-cfa_newDepths = pd.DataFrame({'Depth (m)':mdata[:,0]})
-
-# Make a column with the original depths
-cfa['Original Depth (m)'] = cfa['Depth (m)']
-# Copy updated depths into unfiltered CFA depths
-cfa['Depth (m)'] = cfa_newDepths['Depth (m)']
-
 # Load corrected core breaks file
 breaks = pd.read_csv('../Data/Core Breaks Full Core.csv')
-
-# Load complete Holocene volcanic record
-#holocene_volc = pd.read_excel('../Data/Holocene Volcanic Record.xlsx')
 
 # Load annual timescale for the Holocene
 holocene_timescale = pd.read_excel('../Data/Holocene Timescale.xlsx')
@@ -114,7 +106,8 @@ holocene_timescale = pd.read_excel('../Data/Holocene Timescale.xlsx')
 glacial_timescale = pd.read_excel('../Data/Glacial Tie Point Timescale.xlsx')
 
 # Load combined Holocene and glacial volcanic records
-# These are the 3*MAD from Dave, 101-pt running means
+
+# These are the 3*MAD from Dave, 101-pt running median
 volcanic_record = pd.read_excel('../Data/Volcanic Record.xlsx')
 # Select the glacial rows, which don't yet have ages
 glacial_volc = volcanic_record[volcanic_record['Volcanic Depth (m)'].notnull()].copy()
@@ -126,7 +119,7 @@ glacial_volc['Start Year (b1950)'] = glacial_volc_age_interp.values
 volcanic_record.loc[1209:5400, 'Start Year (b1950)'] = glacial_volc['Start Year (b1950)']
 
 
-# In[4]:
+# In[6]:
 
 
 # ----------------------------------------------------------------------------
@@ -270,8 +263,8 @@ print('\nLabelling volcanic events.')
 cfa['Volcanic Event?'] = False
 cfa['New Volcanic Event?'] = False
 
-# Get list of all indices occurring near volcanic events
-# Minus 2- and plus 6-year buffers
+# Get list of all indices occurring near volcanic events (by year, not depth)
+# Minus 2- and plus 2-year buffers
 volc_rows, new_event_rows = label_volc_events(cfa, volcanic_record, 2, 6)
 # Change all 'Volcanic Event?' values in those rows to True
 cfa.loc[volc_rows, 'Volcanic Event?'] = True
