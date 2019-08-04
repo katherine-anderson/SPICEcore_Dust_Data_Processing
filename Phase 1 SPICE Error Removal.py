@@ -18,9 +18,11 @@
 #    - Creates timescale for CFA data (annual in Holocene, tie points for glacial)
 #    - Labels all measurements within specific years of volcanic events
 #    - Labels the starting row for each volcanic event
+#    - Labels all measurements within known dust events
+#    - Calculates particle concentration and CPP
 #    - Exports cleaned dataset to CSV
 #
-# Katie Anderson, 7/10/19
+# Katie Anderson, 8/4/19
 # ---------------------------------------------------------------------------------------
 
 
@@ -45,18 +47,12 @@ os.chdir('C:\\Users\\katie\\OneDrive\\Documents\\SPICE\\Scripts')
 get_ipython().run_line_magic('run', '"SPICE Data Processing Functions.ipynb"')
 
 
-# In[5]:
+# In[3]:
 
 
 # --------------------CFA FILE PREP--------------------------#
 
 # Load Matlab raw, unfiltered, depth-corrected CFA file
-#mat = loadmat('../Data/CFA_Unfiltered_Synchronized.mat')
-# Import main variable from Matlab file
-#mdata = mat['FinalCFA']
-
-# Original files I've been using. Give different results than the unfiltered_synchronized file...
-#mat = loadmat('../Data/CFA_FullCore_Unfiltered.mat') 
 mat = loadmat('../Data/CFA_Unfiltered_Synchronized_7_24_19.mat')
 mdata = mat['FinalCFA']
 
@@ -118,8 +114,13 @@ glacial_volc['Start Year (b1950)'] = glacial_volc_age_interp.values
 # Add glacial volcanic ages to the complete volcanic record list
 volcanic_record.loc[1209:5400, 'Start Year (b1950)'] = glacial_volc['Start Year (b1950)']
 
+# Load depths of real dust events
+dust_events = pd.read_excel('../Data/Dust Events.xlsx')
+# Only keep the columns with the depth ranges
+dust_events = dust_events.loc[:, 'Dust Event Start (m)':'Dust Event End (m)'].copy()
 
-# In[6]:
+
+# In[4]:
 
 
 # ----------------------------------------------------------------------------
@@ -132,6 +133,7 @@ print('Original CFA dataset length:', original_length)
 print('\nFiltering liquid conductivity, flow rate, Abakus, and depth data.\n')
 
 # 1) Remove data reflecting bubbles with ECM 
+
 #    Do this before NaN'ing a bunch of rows
 #    DOM AND AARON DEFINE BUBBLES DIFFERENTLY. DOM: < 90% OF LAST/NEXT. AARON: STEEP +/- SLOPES (25)
 
@@ -196,6 +198,7 @@ bad_rows = list(bad_depth.index.values)
 cfa.loc[bad_rows, :] = np.nan
 
 # 5) Filter out any inf. or negative Abakus values. Check that everything is NaN'd.
+
 print('\nRemoving negative Abakus values.')
 # Get rid of any individual inf. values (just in case)
 cfa = cfa.replace([np.inf, -np.inf], np.nan)
@@ -213,6 +216,7 @@ bad_rows = depth_isnull[depth_isnull == True].index.values
 cfa.loc[bad_rows, :] = np.nan
 
 # 6) Label each CFA row near core breaks
+
 print('\nLabelling core breaks.')
 
 # Add Y/N 'Break?' column. Default to False.
@@ -228,6 +232,7 @@ cfa.loc[break_rows, 'Break?'] = True
 cfa.loc[new_break_rows, 'New Break?'] = True
 
 #7) Interpolate ages for the CFA rows
+
 # Need to do this before adding in the volcanic events
 print('\nInterpolating timescale.')
 
@@ -255,7 +260,7 @@ ages = age_interp.append(glacial_age_interp)
 # Add 'Age' column with age values
 cfa['Age b 1950'] = ages.values
 
-#8) Label all measurements near volcanic events (currently, only for the Holocene)
+#8) Label all measurements near volcanic events and dust events
 
 print('\nLabelling volcanic events.')
 
@@ -270,15 +275,32 @@ volc_rows, new_event_rows = label_volc_events(cfa, volcanic_record, 2, 6)
 cfa.loc[volc_rows, 'Volcanic Event?'] = True
 cfa.loc[new_event_rows, 'New Volcanic Event?'] = True
 
-# 9) Export CFA files to CSV. Report final length.
+print('\nLabelling dust events.')
+
+# Add Y/N 'Dust Event?' column. Default to false.
+cfa['Dust Event?'] = False
+# Get the row indices of all measurements within dust events
+dust_rows = label_dust_events(cfa, dust_events)
+# Change all 'Dust Event?' values in those rows to True
+cfa.loc[dust_rows, 'Dust Event?'] = True
+
+# 9) Calculate particle concentration and CPP, add to dataframe
+
+print('\nCalculating particle concentration and CPP.')
+# Change this list if we decide to include smallest & largest bins
+sum_columns = ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', 
+               '1.9', '2', '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9',
+               '3.2', '3.6', '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', 
+               '9', '10']
+# Set skipna to False, otherwise, rows with all NaNs will sum to 0
+cfa['Sum 1.1-10'] = cfa[sum_columns].sum(axis = 1, skipna = False)
+
+# Add CPP column to CFA dataframe. Function will ask to include/exclude bins 1 and 12
+cfa['CPP'] = find_cpp(cfa)
+
+# 10) Export CFA file to CSV. Report final length.
 print('\nFinal CFA dataset length:', (len(cfa) - flow - depth))
 cfa.to_csv('../Data/Cleaned_CFA_Phase1_' + str(date.today()) + '.csv')
       
 print('\nData exported to CSV.')
-
-
-# In[ ]:
-
-
-
 

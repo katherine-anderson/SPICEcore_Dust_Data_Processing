@@ -23,7 +23,7 @@
 # ---------------------------------------------------------------------------------------
 
 
-# In[17]:
+# In[26]:
 
 
 from   scipy.io import loadmat
@@ -46,7 +46,7 @@ os.chdir('C:\\Users\\katie\\OneDrive\\Documents\\SPICE\\Scripts')
 get_ipython().run_line_magic('run', '"SPICE Data Processing Functions.ipynb"')
 
 
-# In[22]:
+# In[27]:
 
 
 # ----------------------------------------------------------------------------
@@ -54,42 +54,17 @@ get_ipython().run_line_magic('run', '"SPICE Data Processing Functions.ipynb"')
 #               Load Phase 1 data, Get Dust & Volcanic Events
 # ----------------------------------------------------------------------------
 # Load complete CFA file after mechanical error removal (-2/+6 yr volcanic buffer)
-cfa = pd.read_csv('../Data/Cleaned_CFA_Phase1_2019-07-24.csv', header = 0)
-
-# This version has only a +/- 2 year buffer around volcanic events
-#cfa = pd.read_csv('../Data/Cleaned_CFA_Phase1_2019-07-19.csv', header = 0) 
+cfa = pd.read_csv('../Data/Cleaned_CFA_Phase1_2019-08-04.csv', header = 0)
 del cfa['Unnamed: 0']
 
-# Load depths of real dust events
-dust_events = pd.read_excel('../Data/Dust Events.xlsx')
-# Only keep the columns with the depth ranges
-dust_events = dust_events.loc[:, 'Dust Event Start (m)':'Dust Event End (m)'].copy()
-
-# Label all rows during known dust events
-# Add Y/N 'Dust Event?' column. Default to false.
-cfa['Dust Event?'] = False
 # Get the row indices of all measurements within dust events
-dust_rows = label_dust_events(cfa, dust_events)
-# Change all 'Dust Event?' values in those rows to True
-cfa.loc[dust_rows, 'Dust Event?'] = True
+dust_rows = cfa[(cfa['Dust Event?'] == True)].index.values.tolist()
 
 # Get the row indices of all measurements within volcanic events
 volc_rows = cfa[(cfa['Volcanic Event?'] == True)].index.values.tolist()
 
-# Get particle concentrations
-# Change this if we decide to include smallest & largest bins
-sum_columns = ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', 
-               '1.9', '2', '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9',
-               '3.2', '3.6', '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', 
-               '9', '10']
-# Set skipna to False, otherwise, rows with all NaNs will sum to 0
-cfa['Sum 1.1-10'] = cfa[sum_columns].sum(axis = 1, skipna = False)
 
-# Add CPP column to CFA dataframe. Function will ask to include/exclude bins 1 and 12
-cfa['CPP'] = find_cpp(cfa)
-
-
-# In[23]:
+# In[28]:
 
 
 # ----------------------------------------------------------------------------
@@ -122,10 +97,6 @@ print('\nHump measurements removed: ', len(bad_rows))
 # Update dataset length
 original_length = original_length - len(bad_rows)
 
-
-# In[24]:
-
-
 # 2) Identify and remove particle concentration & CPP outliers, using MAD
 
 # Set # of measurements to use for background medians
@@ -141,13 +112,9 @@ new_cfa, num_outliers = remove_outliers_MAD(new_cfa, dust_rows, volc_rows, windo
 
 print('\nMAD outliers removed: ', num_outliers)
 
-
-# In[25]:
-
-
 # 3) Identify and remove particle concentration & CPP outliers, using 2-pt. integrals
 
-bad_rows = remove_outliers_integrals(new_cfa, 2, dust_rows, volc_rows)
+outlier_rows, bad_rows = remove_outliers_integrals(new_cfa, 2, dust_rows, volc_rows)
 
 # NaN values in remaining rows, except boolean columns
 new_cfa.loc[bad_rows, 'Depth (m)':'12']   = np.nan
@@ -157,19 +124,22 @@ new_cfa.loc[bad_rows, 'Sum 1.1-10':'CPP'] = np.nan
 print('\nIntegral outliers removed:', len(bad_rows))
 
 
-# In[27]:
+# In[31]:
 
 
-# 4) Compute summary statistics and export data
+# 4) Compute summary statistics before and after phase 2 cleaning
 
-print('Final CFA dataset length:', original_length - num_outliers - len(bad_rows))
-
-print('\nPhase 1 Cleaning Results:')
+print('\n--Phase 1 Cleaning Results--')
 summary_statistics(cfa)
-print('\nPhase 2 Cleaning Results:')
+print('\n--Phase 2 Cleaning Results--')
 summary_statistics(new_cfa)
 
-#cfa.to_csv('../Data/Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
+# 5) Export CFA file to CSV. Report final length.
+
+print('\nFinal CFA dataset length:', original_length - num_outliers - len(bad_rows))
+
+cfa.to_csv('../Data/Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
+print('\nData exported to CSV.')
 
 
 # In[ ]:

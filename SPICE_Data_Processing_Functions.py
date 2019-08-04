@@ -397,7 +397,7 @@ def summary_statistics(cfa_data):
 # Output: List of rows to remove from the CFA data
 
 def remove_outliers_integrals(cfa_data, threshold, dust_indices, volc_indices):
-    print('Removing integral outliers')
+    print('\nRemoving integral outliers')
     # Calculate thresholds for concentration & CPP outliers
     
     # Lists for integral values
@@ -465,12 +465,6 @@ def remove_outliers_integrals(cfa_data, threshold, dust_indices, volc_indices):
     remove = cfa_data.index.difference(dust_indices)
     remove = cfa_data.index.difference(volc_indices)
 
-    # Return list of bad rows to remove
-    return remove
-
-
-# In[ ]:
-
-
-
+    # Return list of outlier rows and the rows to remove
+    return overlap, remove
 
