@@ -69,8 +69,8 @@ def label_volc_events(cfa_data, volc_record, start_buffer, end_buffer):
         
     # Subset the CFA data for depths within range of other volcanic events
     for start_year in volc_record['Start Year (b1950)']:
-        new_cfa = cfa_data[(cfa_data['Age b 1950'] <= (start_year + start_buffer)) & 
-                           (cfa_data['Age b 1950'] >= (start_year - end_buffer  ))]
+        new_cfa = cfa_data[(cfa_data['AgeBP'] <= (start_year + start_buffer)) & 
+                           (cfa_data['AgeBP'] >= (start_year - end_buffer  ))]
         # Check that there are CFA measurements in the interval around the volcanic events
         if new_cfa.empty: continue  
         else: 
@@ -280,7 +280,7 @@ def remove_outliers_MAD(cfa_data, dust_indices, volc_indices, background_interva
         
     # Change all rows with overlapping outliers to NaN
     # Don't NaN the 'Break?', 'New Break?', 'Volcanic Event?', and 'New Volcanic Event?' columns
-    cfa_data.loc[remove, ['Depth (m)', 'Age b 1950', 'Flow Rate', 'ECM', '1', '1.1',
+    cfa_data.loc[remove, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1',
                           '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '2', 
                           '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', '3.2', '3.6', 
                           '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12',
