@@ -107,9 +107,6 @@ def find_cpp(cfa_data):
 
     # Sum coarse particle counts for each measurement using the above columns
     cpp_df['Sum_Coarse'] = cfa_data[col_list].sum(axis = 1)
-    # Check for negative counts
-    if min(cpp_df['Sum_Coarse']) < 0: 
-        print('CPP function found negative sum of coarse particles.')
     
     # Remove rows with 0 sum_all counts. Don't divide by 0
     cpp_df = cpp_df[cpp_df['Sum_All'] > 0]
