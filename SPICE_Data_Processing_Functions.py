@@ -94,32 +94,16 @@ def find_cpp(cfa_data):
     # Create dataframe to record particle sums. Needed to prevent dividing by 0
     cpp_df = pd.DataFrame(columns = ['Sum_All', 'Sum_Coarse'])
     
-    # Ask the user to include/exclude smallest & largest bins
-    choice = input('-->Use smallest and largest bins for CPP? Enter Y or N: ')
-
-    # Create column lists for either option
-    if choice == 'y' or choice == 'Y':
-        col_list = ['1', '1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', 
+    col_list = ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', 
                     '1.9', '2', '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', 
                     '3.2', '3.6', '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', 
                     '9', '10', '12']
-    if choice == 'n' or choice == 'N':
-           col_list = ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', 
-                    '1.9', '2', '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', 
-                    '3.2', '3.6', '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', 
-                    '9', '10']
+
     # Sum particle counts for each measurement using the above columns
     cpp_df['Sum_All'] = cfa_data[col_list].sum(axis = 1)
-    # Check for negative counts
-    if min(cpp_df['Sum_All']) < 0: 
-        print('CPP function found negative sum of all particles.')
 
     # Remake the column lists for only the coarse particles (>= 4.5 um)
-    if choice == 'y' or choice == 'Y':
-        col_list = ['4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12']
-
-    if choice == 'n' or choice == 'N':
-        col_list = ['4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10']
+    col_list = ['4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12']
 
     # Sum coarse particle counts for each measurement using the above columns
     cpp_df['Sum_Coarse'] = cfa_data[col_list].sum(axis = 1)
