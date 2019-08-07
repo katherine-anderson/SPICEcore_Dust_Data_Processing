@@ -232,15 +232,15 @@ def remove_outliers_MAD(cfa_data, dust_indices, volc_indices, background_interva
     # Will calculate if 3 measurements in the window that aren't NaN
     
     cpp_background  = cfa_data['CPP'].rolling(background_interval, min_periods = 3).median()
-    conc_background = cfa_data['Sum 1.1-10'].rolling(background_interval, min_periods = 3).median()
+    conc_background = cfa_data['Sum 1.1-12'].rolling(background_interval, min_periods = 3).median()
     
     cpp_mad  = median_absolute_deviation(cfa_data['CPP'])
-    conc_mad = median_absolute_deviation(cfa_data['Sum 1.1-10'])
+    conc_mad = median_absolute_deviation(cfa_data['Sum 1.1-12'])
 
     # Subsetting CFA data for the outliers
     # Point is an outlier if it exceeds threshold * MAD from the background
     cpp_peaks  = cfa_data[(cfa_data['CPP']        >= (cpp_background  + threshold * cpp_mad))]
-    conc_peaks = cfa_data[(cfa_data['Sum 1.1-10'] >= (conc_background + threshold * conc_mad))]
+    conc_peaks = cfa_data[(cfa_data['Sum 1.1-12'] >= (conc_background + threshold * conc_mad))]
 
     # Want to find when these outliers occur at the same time
     overlap = conc_peaks.index.intersection(cpp_peaks.index)
@@ -284,7 +284,7 @@ def remove_outliers_MAD(cfa_data, dust_indices, volc_indices, background_interva
                           '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '2', 
                           '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', '3.2', '3.6', 
                           '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12',
-                          'CPP', 'Sum 1.1-10']] = np.nan
+                          'CPP', 'Sum 1.1-12']] = np.nan
 
     return cfa_data, len(remove)
 
@@ -340,16 +340,16 @@ def plot_single_psd(cfa_data, point, depth_range):
 
 def summary_statistics(cfa_data):
     
-    if 'Sum 1.1-10' in cfa_data.columns and 'CPP' in cfa_data.columns:  
+    if 'Sum 1.1-12' in cfa_data.columns and 'CPP' in cfa_data.columns:  
         # Make local copies of particle concentration & CPP
-        row_sums = cfa_data.loc[:, 'Sum 1.1-10'].copy()
+        row_sums = cfa_data.loc[:, 'Sum 1.1-12'].copy()
         cpp      = cfa_data.loc[:, 'CPP'].copy()
         
         # Convert number concentration to # / mL
         number_conc = row_sums.mul(1000).copy()
         
         # Call function to calculate MAD for the particle concentration & CPP
-        conc_mad = median_absolute_deviation(cfa_data['Sum 1.1-10'])
+        conc_mad = median_absolute_deviation(cfa_data['Sum 1.1-12'])
         cpp_mad  = median_absolute_deviation(cfa_data['CPP'])
     
         print('SUMMARY STATISTICS')
@@ -393,10 +393,10 @@ def remove_outliers_integrals(cfa_data, threshold, dust_indices, volc_indices):
     for x in range(0, len(cfa_data), 2):
         # Concentration integrals
         # Make sure neither value is NaN. All NaN values in concentration column should be NaN in CPP column
-        if cfa_data.loc[x, 'Sum 1.1-10'] == np.nan or cfa_data.loc[y, 'Sum 1.1-10'] == np.nan: 
+        if cfa_data.loc[x, 'Sum 1.1-12'] == np.nan or cfa_data.loc[y, 'Sum 1.1-12'] == np.nan: 
             continue
         else:
-            conc_tpz.append(trapz(cfa_data['Sum 1.1-10'][x: (x+y)]))
+            conc_tpz.append(trapz(cfa_data['Sum 1.1-12'][x: (x+y)]))
             # CPP integrals
             cpp_tpz.append(trapz(cfa_data['CPP'][x: (x+y)]))
                
@@ -418,7 +418,7 @@ def remove_outliers_integrals(cfa_data, threshold, dust_indices, volc_indices):
     for x in range(0,len(cfa_data), 2):
     
         # Concentration outliers
-        if trapz(cfa_data['Sum 1.1-10'].iloc[x:y]) >= conc_error:  # If area increases outside threshold
+        if trapz(cfa_data['Sum 1.1-12'].iloc[x:y]) >= conc_error:  # If area increases outside threshold
             # Only append indices that aren't already in the list. Avoids duplicates.
             if x not in conc_outlier_indices:
                 conc_outlier_indices.append(x)
