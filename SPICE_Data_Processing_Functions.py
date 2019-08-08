@@ -6,7 +6,7 @@
 
 # Script with function definitions. This way, the commands for each calculation can just be written once.
 #
-# Katie Anderson, 8/1/19
+# Katie Anderson, 8/8/19
 #
 # List of functions:
 #
@@ -17,14 +17,11 @@
 #  5) find_humps:                Find hump-shaped PSD anomalies in a CFA dataframe
 #  6) median_absolute_deviation: Calculate MAD for one column of CFA data
 #  7) remove_outliers_MAD:       Remove outliers from the CFA data, using MAD
-#  8) plot_single_psd:           Create histogram of particle counts around a given depth
+#  8) remove_outliers_integrals: Get a list of indices with an integral outlier
 #  9) summary_statistics:        Print summary statistics for dust concentration & CPP during data cleaning
-# 10) remove_outliers_integrals: Get a list of indices with an integral outlier
 
 
-# In[1]:
-
-
+# 1)
 # Function to get indices of all CFA measurements taken within a specified core break range
 # Inputs: CFA dataframe, core breaks dataframe, specified +/- core break range (in meters)
 # Output: List of rows within core breaks
@@ -52,10 +49,7 @@ def label_core_breaks(cfa_data, core_breaks, core_range):
     # Return list of indices occurring within core breaks
     return break_true, new_break
 
-
-# In[ ]:
-
-
+# 2)
 # Function to get indices of all CFA measurements taken within range of years around volcanic events
 # Inputs: Holocene CFA, Holocene volcanic dates, before/after buffers, in years
 # Output: List of rows within volcanic range
@@ -82,10 +76,7 @@ def label_volc_events(cfa_data, volc_record, start_buffer, end_buffer):
     # Return list of rows within buffer dates of volcanic events
     return volc_true, new_volc
 
-
-# In[1]:
-
-
+#3) 
 # Function to calculate CPP per measurement. Asks the user to keep/exclude smallest and largest bins.
 # Input: CFA data
 # Output: List of CPP for each row
@@ -114,10 +105,7 @@ def find_cpp(cfa_data):
     # Return a series of the percent of particles that are coarse per row
     return(cpp_df['Sum_Coarse'] / cpp_df['Sum_All'] * 100)
 
-
-# In[ ]:
-
-
+# 4)
 # Function to get a list of rows within dust events
 # Inputs: CFA data, dust event dataframe with depth intervals
 # Output: List of rows within dust events
@@ -140,10 +128,7 @@ def label_dust_events(cfa_data, dust_depths):
     # Return list of rows within dust events 
     return dust_event_true
 
-
-# In[2]:
-
-
+# 5) 
 # Identifies CFA measurements with hump PSD anomalies
 # Inputs: CFA data and the min/max depths in which to find the humps
 # Output: CFA dataframe with only the hump measurements
@@ -151,7 +136,8 @@ def label_dust_events(cfa_data, dust_depths):
 #    average count for bins 1.5-2.9 um.
 
 def find_humps(cfa_data, min_depth, max_depth):
-    
+    print('\nRemoving PSD hump anomalies')
+
     # Subset the CFA data for the selected depth range
     cfa_data = cfa_data[(cfa_data['Depth (m)'] >= min_depth) & 
                         (cfa_data['Depth (m)'] <= max_depth)]
@@ -192,17 +178,14 @@ def find_humps(cfa_data, min_depth, max_depth):
     new_humps = humps_diff[(humps_diff['Depth (m)'] >= 0.03)]
     
     # Report the number of hump measurements and events
-    choice = input('Print detailed hump anomaly counts? Enter Y or N: ')
+    choice = input('\tPrint detailed PSD hump anomaly counts? Enter Y or N: ')
     if choice == 'y' or choice == 'Y':
-        print('Number of measurements:    ', len(cfa_data))
-        print('Number of discrete events: ', len(new_humps))
+        print('\tNumber of measurements:    ', len(cfa_data))
+        print('\tNumber of discrete events: ', len(new_humps))
     
     return cfa_data
 
-
-# In[ ]:
-
-
+# 6)  
 # Function to calculate Median Absolute Deviation (MAD)
 # Inputs: One-dimensional dataset (like CFA particle concentration or CPP)
 # Output: MAD
@@ -214,13 +197,10 @@ def median_absolute_deviation(x, axis = None):
     # Return the median of that deviation
     return deviation.median()
 
-
-# In[ ]:
-
-
+# 7) 
 # Function to remove outliers given different background & sensitivity conditions
 # Inputs: CFA data, list of dust event rows, list of volcanic event rows, background window size, MAD threshold
-# Outputs: Outlier counts, dataframe with overlapping outliers removed, number of outliers removed
+# Outputs: Dataframe with overlapping outliers removed, list of outlier indices
 
 def remove_outliers_MAD(cfa_data, dust_indices, volc_indices, background_interval, threshold):
     print('\nRemoving MAD outliers')
@@ -245,134 +225,39 @@ def remove_outliers_MAD(cfa_data, dust_indices, volc_indices, background_interva
     overlap = overlap.difference(dust_indices)
     
     # Ask the user whether or not to preserve outliers at volcanic events
-    choice1 = input('\n-->Remove outliers at volcanic events? Enter Y or N: ')
+    choice1 = input('\tRemove outliers at volcanic events? Enter Y or N: ')
     # Ask the user whether or not to display # of outliers found & removed
-    choice2 = input('\n-->Print results? Enter Y or N: ')
+    choice2 = input('\tPrint results? Enter Y or N: ')
     
     if choice1 == 'y' or choice1 == 'Y':
         # Remove variable has the indices at which to NaN values
         remove = overlap
         if choice2 == 'y' or choice2 == 'Y':
-            print('\nSUMMARY OF OUTLIER REMOVAL')
-            print('1) Rows Removed: ', len(remove))
+            print('\n\tSummary of MAD outlier removal')
+            print('\t1) Rows Removed: ', len(remove))
     if choice1 == 'n' or choice1 == 'N':
         # Subtract the volcanic event indices from the overlapping outlier indices
         remove = overlap.difference(volc_indices)
         if choice2 == 'y' or choice2 == 'Y':
-            print('\nSUMMARY OF OUTLIER REMOVAL')
-            print('1) Rows Removed: ', len(remove))
+            print('\n\tSummary of MAD outlier removal')
+            print('\t1) Rows Removed: ', len(remove))
     
     # Count number of discrete volcanic events in the rows we're about to remove
     # Get a copy of the CFA data with only the 'New Volcanic Event?' column
     temp_cfa = cfa_data.loc[remove, :].copy()
     volc_event = temp_cfa[(temp_cfa['New Volcanic Event?'] == True)]
     if choice2 == 'y' or choice2 == 'Y':
-        print('2) Number of discrete volcanic events in removed rows:', len(volc_event))
+        print('\t2) Number of discrete volcanic events in removed rows:', len(volc_event))
         
     # Count number of core breaks in the rows we're about to remove
     temp_cfa = cfa_data.loc[remove, :].copy()
     break_outliers = temp_cfa[(temp_cfa['New Break?'] == True)]
     if choice2 == 'y' or choice2 == 'Y':
-        print('3) Number of discrete core breaks in removed rows:    ', len(break_outliers))
+        print('\t3) Number of discrete core breaks in removed rows:    ', len(break_outliers))
         
-    # Change all rows with overlapping outliers to NaN
-    # Don't NaN the 'Break?', 'New Break?', 'Volcanic Event?', and 'New Volcanic Event?' columns
-    cfa_data.loc[remove, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1',
-                          '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '2', 
-                          '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', '3.2', '3.6', 
-                          '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12',
-                          'CPP', 'Sum 1.1-12']] = np.nan
+    return remove
 
-    return cfa_data, len(remove)
-
-
-# In[ ]:
-
-
-# Function to create 1 bar plot of particle counts within x-centimenters of a point
-#     Inputs: CFA dataframe, depth of interest, depth range around that point
-#     Output: Bar plot of particle counts per bin, with option to save
-
-def plot_single_psd(cfa_data, point, depth_range):
-
-    # The range around the main point of interest
-    point_min = point - depth_range
-    point_max = point + depth_range
-
-    # Subset the CFA data to range around given point
-    point_cfa = cfa_data[(cfa_data['Depth (m)'] >= point_min) 
-                        & (cfa_data['Depth (m)'] <= point_max)]
-    
-    # Check for and remove columns
-    col_list = ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', 
-                    '1.9', '2', '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', 
-                    '3.2', '3.6', '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', 
-                    '9', '10']
-    point_cfa = point_cfa[col_list]
-    
-    # Sum particles by column around main & comp. points
-    point_count = point_cfa.sum(axis = 0)
-    
-    # Make figures
-    fig, ax = plt.subplots(figsize = (5,5))
-    
-    ax.bar(col_list, point_count, width = 1, color = 'black');
-    ax.set_xticks([0,10,20,29])
-    ax.tick_params(labelsize = 14)
-    ax.set_ylabel('Counts (#/uL)', fontsize = 16)
-    ax.set_title(str(point) + ' Meters +/- ' + str(depth_range) + ' Meters', fontsize = 18)    
-    
-    choice = input('Save Figure? Enter Y or N: ')
-    if choice == 'y' or choice == 'Y':
-        os.chdir('C:\\Users\\katie\\OneDrive\\Documents\\SPICE\\PSD Plots')
-        plt.savefig('PSD_1_' + str(point) + '.png')
-
-
-# In[ ]:
-
-
-# Function to print summary statistics for dust concentration & CPP during data cleaning
-#     Inputs: CFA dataframe with particle sum and CPP columns
-#     Output: None. Prints summary statistics.
-
-def summary_statistics(cfa_data):
-    
-    if 'Sum 1.1-12' in cfa_data.columns and 'CPP' in cfa_data.columns:  
-        # Make local copies of particle concentration & CPP
-        row_sums = cfa_data.loc[:, 'Sum 1.1-12'].copy()
-        cpp      = cfa_data.loc[:, 'CPP'].copy()
-        
-        # Convert number concentration to # / mL
-        number_conc = row_sums.mul(1000).copy()
-        
-        # Call function to calculate MAD for the particle concentration & CPP
-        conc_mad = median_absolute_deviation(cfa_data['Sum 1.1-12'])
-        cpp_mad  = median_absolute_deviation(cfa_data['CPP'])
-    
-        print('SUMMARY STATISTICS')
-        # Skip NaNs when calculating these
-        print('Dust number concentration (/mL):')
-        print('    Mean:   %.2f' % (np.nanmean(number_conc)))
-        print('    Median: %.2f' % (np.nanmedian(number_conc)))
-        print('    Min:    %.2f' % (np.nanmin(number_conc)))
-        print('    Max:    %.2f' % (np.nanmax(number_conc)))
-        print('    StDev:  %.2f' % (np.nanstd(number_conc)))
-        print('    MAD:    %.2f' % conc_mad)
-    
-        print('\nCoarse Particles (%):')
-        print('    Mean:   %.2f' % (np.nanmean(cpp)))
-        print('    Median: %.2f' % (np.nanmedian(cpp)))
-        print('    Min:    %.2f' % (np.nanmin(cpp)))
-        print('    Max:    %.2f' % (np.nanmax(cpp)))
-        print('    StDev:  %.2f' % (np.nanstd(cpp)))
-        print('    MAD:    %.2f' % cpp_mad)
-        
-    else: print('Input data with particle sum and CPP columns')
-
-
-# In[ ]:
-
-
+# 8) 
 # Function to remove outliers using rolling 2-pt integrals (Aaron)
 # Inputs: CFA data, stdev threshold above median, list of dust event rows, list of volcanic rows
 # Output: List of rows to remove from the CFA data
@@ -448,4 +333,42 @@ def remove_outliers_integrals(cfa_data, threshold, dust_indices, volc_indices):
 
     # Return list of outlier rows and the rows to remove
     return overlap, remove
+    
+# 9)    
+# Function to print summary statistics for dust concentration & CPP during data cleaning
+#     Inputs: CFA dataframe with particle sum and CPP columns
+#     Output: None. Prints summary statistics.
+
+def summary_statistics(cfa_data):
+    
+    if 'Sum 1.1-12' in cfa_data.columns and 'CPP' in cfa_data.columns:  
+        # Make local copies of particle concentration & CPP
+        row_sums = cfa_data.loc[:, 'Sum 1.1-12'].copy()
+        cpp      = cfa_data.loc[:, 'CPP'].copy()
+        
+        # Convert number concentration to # / mL
+        number_conc = row_sums.mul(1000).copy()
+        
+        # Call function to calculate MAD for the particle concentration & CPP
+        conc_mad = median_absolute_deviation(cfa_data['Sum 1.1-12'])
+        cpp_mad  = median_absolute_deviation(cfa_data['CPP'])
+    
+        # Skip NaNs when calculating these
+        print('Dust number concentration (/mL):')
+        print('    Mean:   %.2f' % (np.nanmean(number_conc)))
+        print('    Median: %.2f' % (np.nanmedian(number_conc)))
+        print('    Min:    %.2f' % (np.nanmin(number_conc)))
+        print('    Max:    %.2f' % (np.nanmax(number_conc)))
+        print('    StDev:  %.2f' % (np.nanstd(number_conc)))
+        print('    MAD:    %.2f' % conc_mad)
+    
+        print('\nCoarse Particles (%):')
+        print('    Mean:   %.2f' % (np.nanmean(cpp)))
+        print('    Median: %.2f' % (np.nanmedian(cpp)))
+        print('    Min:    %.2f' % (np.nanmin(cpp)))
+        print('    Max:    %.2f' % (np.nanmax(cpp)))
+        print('    StDev:  %.2f' % (np.nanstd(cpp)))
+        print('    MAD:    %.2f' % cpp_mad)
+        
+    else: print('Input data with particle sum and CPP columns')
 

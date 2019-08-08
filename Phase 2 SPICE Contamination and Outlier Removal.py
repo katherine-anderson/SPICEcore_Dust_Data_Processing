@@ -1,17 +1,14 @@
 # --------------------------------------------------------------------------------------
-#                        SPICE REMOVE CONTAMINATION SCRIPT
+#                     SPICE REMOVE OUTLIERS AND CONTAMINATION SCRIPT
 #               Removes anomalies and outliers from the error-free CFA data
 #
 #    - Reads CFA dataframe (with mechanical errors removed)
-#    - Calculates CPP and particle concentration (bins 1.1-10) for the full core
 #    - Counts and NaNs all rows with a 'hump-shaped' PSD anomaly
-#    - Creates MAD outlier removal scenarios
-#    - Removes integral outliers (after Aaron)
+#    - Removes outliers using MAD
+#    - Removes outliers using integrals
 #    - Preserves known dust events during 'hump' and outlier removal
-#
-#    - Loads raw, unfiltered CFA with depth corrections. Gets CPP and particle conc.
-#    - Creates a series of plots to evaluate different outlier removal scenarios
-#    - Creates before & after plots for the data processing
+#    - Prints summary statistics
+#    - Saves cleaned and bad data to two separate files
 #
 # Aaron Chesler and Katie Anderson, 8/8/19
 # ---------------------------------------------------------------------------------------
@@ -21,32 +18,32 @@
 # ---------------------------------------------------------------------------------------
 
 # Import modules and packages
-from   scipy.io import loadmat
 import numpy  as np
 from   numpy import trapz
 import pandas as pd
-import csv
 import os
 from   datetime import date
-import matplotlib.pyplot as plt
-import statistics
-
-# Run function definitions script
-exec(open('SPICE_Data_Processing_Functions.py').read())
 
 # Ask user whether to run phase 1 cleaning (error removal) from this script
 choice = input('Run SPICEcore error removal script from this file? Enter Y or N: ')
 if choice == 'y' or choice == 'Y':
     exec(open('cleaning_cfa.py').read())
-else: continue
 
 # Ask user for directory where data are located
-directory = input('Enter path for SPICEcore data: ')
-os.chdir(directory)
+else: 
+    # Run function definitions script. It's included in the phase 1 script
+    exec(open('SPICE_Data_Processing_Functions.py').read())
+    # Get directory for data files
+    directory = input('Enter path for SPICEcore data: ')
+    os.chdir(directory)
 
-# Load complete CFA file after mechanical error removal (-2/+6 yr volcanic buffer)
-cfa = pd.read_csv('Cleaned_CFA_Phase1_2019-08-07.csv', header = 0)
-del cfa['Unnamed: 0']
+# Load complete CFA file after mechanical error removal
+# Ask user for CFA file to use
+file = input('Enter name of the CFA file after error removal as .csv: ')
+cfa_phase1 = pd.read_csv(file, header = 0)
+del cfa_phase1['Unnamed: 0']
+# Make separate copies of the CFA data before and after phase 2 cleaning
+cfa = cfa_phase1.copy()
 
 # Get the row indices of all measurements within dust events
 dust_rows = cfa[(cfa['Dust Event?'] == True)].index.values.tolist()
@@ -55,14 +52,14 @@ dust_rows = cfa[(cfa['Dust Event?'] == True)].index.values.tolist()
 volc_rows = cfa[(cfa['Volcanic Event?'] == True)].index.values.tolist()
 
 
-
 # ---------------------------------------------------------------------------------------
 #                            PART 2: Outlier and Contamination Removal
 # ---------------------------------------------------------------------------------------
 
-original_length = 438212 # From error removal script. Update as needed.
-print('CFA dataset length after error removal:', original_length)
-print('Removing outliers and contamination signals.')
+print('\n\n-----------------------------------------------------------------------')
+length = 438212 # From error removal script. Update as needed.
+print('\n\nRemoving outliers and contamination signals.')
+print('CFA dataset length after error removal:', length)
 
 # 1) Identify and remove hump-shaped PSD anomalies
 
@@ -70,65 +67,95 @@ print('Removing outliers and contamination signals.')
 # Inputs: CFA data, minimum depth, maximum depth. Currently using the full core.
 humps = find_humps(cfa, 0, 1752)
 
-# PRESERVE KNOWN DUST EVENTS
 # Remove all rows in real dust events from the hump list
 bad_rows = humps.index.difference(dust_rows)
 # Remove all rows in real volcanic events from the hump list
 bad_rows = humps.index.difference(volc_rows)
 
-# NaN values in remaining rows, except boolean columns
-contamination = pd.DataFrame()
-cfa.loc[bad_rows, 'Depth (m)': '12'] = np.nan
-cfa.loc[bad_rows, 'AgeBP'] = np.nan
-cfa.loc[bad_rows, 'CPP']        = np.nan
+# Save all bad data into a separate dataframe
+bad_cfa = cfa.loc[bad_rows, :].copy()
+bad_cfa['Error Type'] = 'PSD Hump Anomaly'
+
+# NaN values in the bad rows in the original CFA data, except boolean columns
+cfa.loc[bad_rows, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1', '1.2', 
+                   '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '2', '2.1', 
+                   '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', '3.2', '3.6', '4', 
+                   '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12',
+                   'CPP', 'Sum 1.1-12']] = np.nan
 
 # Print number of measurements removed
 print('\tPSD anomalies removed: ', len(bad_rows))
 # Update dataset length
-original_length = original_length - len(bad_rows)
+length = length - len(bad_rows)
 
 # 2) Identify and remove particle concentration & CPP outliers, using MAD
 
 # Set # of measurements to use for background medians
 window = 500
-# Set threshold for accepted Median Absolute Deviations (MAD).
+# Set threshold for accepted Median Absolute Deviations (MAD) (e.g., 2 * MAD)
 threshold = 2
-# Make a new copy of the CFA data to ensure that the data cleaning doesn't change original data
-new_cfa = cfa.copy()
 
 # Remove overlapping concentration & CPP outliers
 # Inputs: CFA data, dust event indices, volcanic event indices, background window size, and MAD threshold
-new_cfa, num_outliers = remove_outliers_MAD(new_cfa, dust_rows, volc_rows, window, threshold)
+bad_rows = remove_outliers_MAD(cfa, dust_rows, volc_rows, window, threshold)
 
-print('\tMAD outliers removed: ', num_outliers)
+# Add bad data to the bad CFA dataframe
+bad_cfa = bad_cfa.append(cfa.loc[bad_rows, :], sort = False)
+# Label error type
+bad_cfa['Error Type'].fillna('MAD Outlier', inplace = True)
+
+# NaN values in the bad rows in the original CFA data, except boolean columns
+cfa.loc[bad_rows, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1', '1.2', 
+                   '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '2', '2.1', 
+                   '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', '3.2', '3.6', '4', 
+                   '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12',
+                   'CPP', 'Sum 1.1-12']] = np.nan
+
+print('\tMAD outliers removed: ', len(bad_rows))
+
+# Update dataset length
+length = length - len(bad_rows)
 
 # 3) Identify and remove particle concentration & CPP outliers, using 2-pt. integrals
 
 outlier_rows, bad_rows = remove_outliers_integrals(new_cfa, 2, dust_rows, volc_rows)
 
+# Add bad data to the bad CFA dataframe
+bad_cfa = bad_cfa.append(cfa.loc[bad_rows, :], sort = False)
+# Label error type
+bad_cfa['Error Type'].fillna('Integral Outlier', inplace = True)
+
 # NaN values in remaining rows, except boolean columns
-new_cfa.loc[bad_rows, 'Depth (m)':'12']   = np.nan
-new_cfa.loc[bad_rows, 'AgeBP']       = np.nan
-new_cfa.loc[bad_rows, 'Sum 1.1-12':'CPP'] = np.nan
+cfa.loc[bad_rows, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1', '1.2', 
+                   '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '2', '2.1', 
+                   '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', '3.2', '3.6', '4', 
+                   '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12',
+                   'CPP', 'Sum 1.1-12']] = np.nan
 
-print('\tIntegral outliers removed:', len(bad_rows))
+print('\tIntegral outliers removed:', len(bad_rows)
 
+# Update dataset length
+length = length - len(bad_rows)
 
+# 4) Compute summary statistics before and after phase 2 cleaning, if requested
 
-# 4) Compute summary statistics before and after phase 2 cleaning
+choice = input('Print summary statistics? Enter Y or N: ')
+if choice == 'Y' or choice == 'y':
 
-print('\n--Phase 1 Cleaning Results--')
-# Input the before & after CFA data into the summary statistics function
-summary_statistics(cfa)
-print('\n--Phase 2 Cleaning Results--')
-summary_statistics(new_cfa)
+    print('\n--Phase 1 Cleaning Results--')
+    # Input the before & after CFA data into the summary statistics function
+    summary_statistics(cfa_phase1)
+    print('\n--Phase 2 Cleaning Results--')
+    summary_statistics(cfa)
 
 # 5) Export CFA file to CSV. Report final length.
+print('\n\nFinished CFA outlier & contamination removal')
+print('\n\tFinal CFA dataset length:', length)
 
-print('\nFinal CFA dataset length:', original_length - num_outliers - len(bad_rows))
-
-cfa.to_csv('../Data/Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
-print('\nData exported to CSV.')
+cfa.to_csv('Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
+bad_cfa.to_csv('Bad_CFA_Phase2_' + str(date.today()) + '.csv')
+print('\n\tData exported to CSV. Bad data saved in separate file.')
+print('-----------------------------------------------------------------------')
 
 
 
