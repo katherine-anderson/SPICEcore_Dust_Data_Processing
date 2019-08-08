@@ -72,7 +72,7 @@ volc_rows = cfa[(cfa['Volcanic Event?'] == True)].index.values.tolist()
 #                        CFA DATA OUTLIER & CONTAMINATION REMOVAL
 # ----------------------------------------------------------------------------
 
-original_length = 438211 # From the last script
+original_length = 438212 # From the last script
 print('CFA dataset length after error removal:', original_length)
 print('\n')
 
