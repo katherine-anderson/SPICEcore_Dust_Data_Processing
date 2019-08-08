@@ -141,6 +141,8 @@ depth_isnull = cfa['Depth (m)'].isnull()
 bad_rows = depth_isnull[depth_isnull == True].index.values
 cfa.loc[bad_rows, :] = np.nan
 
+# THIS IS WHERE WE COULD PUT THE 300-M CORRECTION
+
 # 6) Label each CFA row near core breaks
 
 print('\nLabelling core breaks.')

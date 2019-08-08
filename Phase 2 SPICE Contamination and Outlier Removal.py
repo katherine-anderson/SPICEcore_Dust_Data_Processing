@@ -118,6 +118,8 @@ length = length - len(bad_rows)
 
 # 3) Identify and remove particle concentration & CPP outliers, using 2-pt. integrals
 
+# UPDATE THIS FUNCTION WITH AARON'S NEWEST VERSION
+
 outlier_rows, bad_rows = remove_outliers_integrals(new_cfa, 2, dust_rows, volc_rows)
 
 # Add bad data to the bad CFA dataframe
@@ -136,6 +138,8 @@ print('\tIntegral outliers removed:', len(bad_rows)
 
 # Update dataset length
 length = length - len(bad_rows)
+
+# ADD DATA INTERPOLATION, TAIL CORRECTIONS HERE?
 
 # 4) Compute summary statistics before and after phase 2 cleaning, if requested
 
