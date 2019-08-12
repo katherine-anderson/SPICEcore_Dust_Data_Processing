@@ -38,4 +38,4 @@ bad_diff = bad_diff.dropna()
 # NaN the first row after a gap in depths >= 6 cm
 bad_rows = list(bad_diff.index.values)
 # Change values in these rows to NaN
-#cfa.loc[bad_rows, :] = np.nan
+cfa.loc[bad_rows, :] = np.nan
