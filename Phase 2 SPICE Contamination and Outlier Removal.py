@@ -2,15 +2,19 @@
 #                     SPICE REMOVE OUTLIERS AND CONTAMINATION SCRIPT
 #               Removes anomalies and outliers from the error-free CFA data
 #
-#    - Reads CFA dataframe (with mechanical errors removed)
-#    - Counts and NaNs all rows with a 'hump-shaped' PSD anomaly
-#    - Removes outliers using MAD
-#    - Removes outliers using integrals
-#    - Preserves known dust events during 'hump' and outlier removal
+#    - Gives user the option to run all of the data cleaning from this script
+#    - Cleans anomalies and outliers from the CFA data after mechanical error removal
+#      - Preserves data during known dust and volcanic events
+#      - Saves 'bad' data into another file, labelled by error type
+#      - NaNs 'bad' data in the CFA file and prints error counts
+#      - Error types:
+#        1) PSD hump anomaly
+#        2) MAD outliers
+#        3) Integral outliers
 #    - Prints summary statistics
-#    - Saves cleaned and bad data to two separate files
+#    - Saves cleaned and 'bad' data to two separate files
 #
-# Aaron Chesler and Katie Anderson, 8/8/19
+# Aaron Chesler and Katie Anderson, 8/13/19
 # ---------------------------------------------------------------------------------------
 #%%
 # ---------------------------------------------------------------------------------------
@@ -31,8 +35,13 @@ if choice == 'y' or choice == 'Y':
 
 # Ask user for directory where data are located
 else: 
+    # Ask user for directory where scripts are located
+    directory = input('Enter path for SPICEcore scripts: ')
+    os.chdir(directory)
+    
     # Run function definitions script. It's included in the phase 1 script
     exec(open('SPICE_Data_Processing_Functions.py').read())
+    
     # Get directory for data files
     directory = input('Enter path for SPICEcore data: ')
     os.chdir(directory)
@@ -42,13 +51,15 @@ else:
 file = input('Enter name of the CFA file after error removal as .csv: ')
 cfa_phase1 = pd.read_csv(file, header = 0)
 del cfa_phase1['Unnamed: 0']
-# Make separate copies of the CFA data before and after phase 2 cleaning
+# Make separate copies of the CFA data before and after phase 2 cleaning, for comparison
 cfa = cfa_phase1.copy()
 
 # Get the row indices of all measurements within dust events
+# These rows will be preserved during subsequent data cleaning
 dust_rows = cfa[(cfa['Dust Event?'] == True)].index.values.tolist()
 
 # Get the row indices of all measurements within volcanic events
+# These rows will be preserved during subsequent data cleaning
 volc_rows = cfa[(cfa['Volcanic Event?'] == True)].index.values.tolist()
 
 #%%
