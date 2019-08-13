@@ -3,23 +3,23 @@
 # Removes melting errors in the raw CFA data, interpolates timescale, and adds descriptive columns
 #
 #    - Loads raw, unfiltered CFA with depth corrections
-#    - NaNs bubbles and liquid conductivity values < 0.6
-#    - NaNs measurements without positive flow rates
-#    - NaNs negative Abakus values
-#    - NaNs measurements with depth duplicates or decreases
 #    - Tracks the number of measurements NaN'ed in each step
-#    - Labels all measurements within specified depth ranges of core breaks
-#    - Creates timescale for CFA data (annual in Holocene, tie points for glacial)
-#    - Labels all measurements within specified years of volcanic events
-#    - Labels the starting row for each volcanic event
-#    - Labels all measurements within known dust events
-#    - Calculates particle concentration and CPP
-#    - Exports cleaned dataset to CSV
+#    1) NaNs bubbles using liquid conductivity data
+#    2) NaNs liquid conductivity values < 0.6
+#    3) NaNs measurements without positive flow rates
+#    4) NaNs measurements with depth duplicates or decreases
+#    5) NaNs any negative and infinite Abakus values
+#    6) Applies correction to Abakus data from bad melt day (7/19/2016))
+#    7) Creates timescale for CFA data (annual in Holocene, tie points for glacial)
+#    8) Labels all measurements within specified depth ranges of core breaks
+#    9) Labels all measurements within volcanic events and dust events
+#   10) Calculates particle concentration and coarse particle percentage (CPP)
+#   11) Exports cleaned dataset to CSV
 #
-# Katie Anderson and Aaron Chesler, 8/8/19
+# Katie Anderson and Aaron Chesler, 8/13/19
 # ------------------------------------------------------------------------------------------------------
 
-
+#%%
 # ------------------------------------------------------------------------------------------------------
 #                                           1: FILE PREPARATION
 # ------------------------------------------------------------------------------------------------------
@@ -29,6 +29,10 @@ import pandas as pd
 import os 
 import numpy as np
 from datetime import date
+
+# Ask user for directory where scripts are located
+directory = input('Enter path for SPICEcore scripts: ')
+os.chdir(directory)
 
 # Run script with function definitions
 exec(open('SPICE_Data_Processing_Functions.py').read())
@@ -46,12 +50,10 @@ cfa = cfa.astype('float')
 # Load other needed files
 volcanic_record = pd.read_excel('Full_final_volcanic_record_7August2019.xlsx')
 breaks = pd.read_excel('core_breaks_full.xlsx')
-annual_depths = pd.read_excel('SPICEcore_Timescale_4_24_2019.xlsx', sheetname = 'Depth-Age Scale')
+annual_depths = pd.read_excel('SPICEcore_Timescale_4_24_2019.xlsx', sheet_name = 'Depth-Age Scale')
 dust_events = pd.read_excel('Dust_Events.xlsx')
 
-
-
-
+#%%
 # ------------------------------------------------------------------------------------------------------
 #                                           2: ERROR REMOVAL
 # ------------------------------------------------------------------------------------------------------
@@ -141,11 +143,24 @@ depth_isnull = cfa['Depth (m)'].isnull()
 bad_rows = depth_isnull[depth_isnull == True].index.values
 cfa.loc[bad_rows, :] = np.nan
 
-# THIS IS WHERE WE COULD PUT THE 300-M CORRECTION
+# 6) Apply correction to Abakus data from 7/19/2016
 
-# 6) Label each CFA row near core breaks
+print('\tCorrecting errors from one melt day.')
 
-print('\nLabelling core breaks.')
+cfa = correct_meltday(cfa)
+
+# 7) Interpolate ages for the CFA rows
+
+# Need to do this before adding in the volcanic events
+print('\nInterpolating timescale.')
+
+#Interpolate ages for SPICEcore timescale
+years_interp = pd.Series(np.interp(cfa['Depth (m)'] ,annual_depths['Depth (m)'],annual_depths['Age (Years Before 1950)'] ))
+cfa['AgeBP'] = years_interp
+
+# 8) Label each CFA row near core breaks
+
+print('Labelling core breaks.')
 
 # Add Y/N 'Break?' column. Default to False.
 cfa['Break?']     = False
@@ -160,21 +175,13 @@ break_rows, new_break_rows = label_core_breaks(cfa, breaks, 0.03)
 cfa.loc[break_rows, 'Break?']         = True
 cfa.loc[new_break_rows, 'New Break?'] = True
 
-#7) Interpolate ages for the CFA rows
-
-# Need to do this before adding in the volcanic events
-print('Interpolating timescale.')
-
-#Interpolate ages for SPICEcore timescale
-years_interp = pd.Series(np.interp(cfa['Depth (m)'] ,annual_depths['Depth (m)'],annual_depths['Age (Years Before 1950)'] ))
-cfa['AgeBP'] = years_interp
-
-#8) Label all measurements near volcanic events and dust events
+# 9) Label all measurements near volcanic events and dust events
 
 print('Labelling volcanic events.')
 
 # Create Y/N 'Volcanic Event?' column. Default to False
 cfa['Volcanic Event?']     = False
+# This column will indicate the first measurement for each event, as a way to count the events
 cfa['New Volcanic Event?'] = False
 
 # Get list of all indices occurring near volcanic events (by year, not depth)
@@ -194,7 +201,7 @@ dust_rows = label_dust_events(cfa, dust_events)
 # Change all 'Dust Event?' values in those rows to True
 cfa.loc[dust_rows, 'Dust Event?'] = True
 
-# 9) Calculate particle concentration and CPP, add to dataframe
+# 10) Calculate particle concentration and CPP
 
 print('Calculating particle concentration and CPP.')
 # Change this list if we decide to include smallest & largest bins
