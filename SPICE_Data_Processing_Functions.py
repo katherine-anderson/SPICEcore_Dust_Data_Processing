@@ -161,14 +161,23 @@ def label_dust_events(cfa_data, dust_depths):
 # Output: List of CPP for each row
 
 def find_cpp(cfa_data):
-    # Create dataframe to record particle sums. Needed to prevent dividing by 0
+   
+    # Create dataframe to record particle sums. Need to prevent dividing by 0
     cpp_df = pd.DataFrame(columns = ['Sum_All', 'Sum_Coarse'])
     
     col_list = ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', 
                 '2', '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', '3.2', 
                 '3.6', '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', 
                 '10', '12']
-
+    
+    # Select the non-NaN CFA rows
+    depth_isnull = cfa_data['Depth (m)'].isnull()
+    valid_depth = depth_isnull[depth_isnull == False]
+    # Get the indices of these rows
+    valid_depth = list(valid_depth.index.values)
+    # Select these rows in the CFA data
+    cfa_data = cfa_data.loc[valid_depth].copy() 
+    
     # Sum particle counts for each measurement using the above columns
     cpp_df['Sum_All'] = cfa_data[col_list].sum(axis = 1)
 
