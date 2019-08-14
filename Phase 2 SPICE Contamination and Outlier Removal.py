@@ -95,7 +95,7 @@ cfa.loc[bad_rows, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1', '1.2',
                    'CPP', 'Sum 1.1-12']] = np.nan
 
 # Print number of measurements removed
-print('\tPSD anomalies removed: ', len(bad_rows))
+print('Rows removed: ', len(bad_rows))
 # Update dataset length
 length = length - len(bad_rows)
 
@@ -122,7 +122,7 @@ cfa.loc[bad_rows, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1', '1.2',
                    '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12',
                    'CPP', 'Sum 1.1-12']] = np.nan
 
-print('\tMAD outliers removed: ', len(bad_rows))
+print('\tRows removed: ', len(bad_rows))
 
 # Update dataset length
 length = length - len(bad_rows)
@@ -131,7 +131,7 @@ length = length - len(bad_rows)
 
 # UPDATE THIS FUNCTION WITH AARON'S NEWEST VERSION
 
-outlier_rows, bad_rows = remove_outliers_integrals(new_cfa, 2, dust_rows, volc_rows)
+outlier_rows, bad_rows = remove_outliers_integrals(cfa, 2, dust_rows, volc_rows)
 
 # Add bad data to the bad CFA dataframe
 bad_cfa = bad_cfa.append(cfa.loc[bad_rows, :], sort = False)
@@ -145,7 +145,7 @@ cfa.loc[bad_rows, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1', '1.2',
                    '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12',
                    'CPP', 'Sum 1.1-12']] = np.nan
 
-print('\tIntegral outliers removed:', len(bad_rows)
+print('\tRows removed:', len(bad_rows))
 
 # Update dataset length
 length = length - len(bad_rows)
@@ -167,8 +167,8 @@ if choice == 'Y' or choice == 'y':
 print('\n\nFinished CFA outlier & contamination removal')
 print('\n\tFinal CFA dataset length:', length)
 
-cfa.to_csv('Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
-bad_cfa.to_csv('Bad_CFA_Phase2_' + str(date.today()) + '.csv')
+#cfa.to_csv('Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
+#bad_cfa.to_csv('Bad_CFA_Phase2_' + str(date.today()) + '.csv')
 print('\n\tData exported to CSV. Bad data saved in separate file.')
 print('-----------------------------------------------------------------------')
 
