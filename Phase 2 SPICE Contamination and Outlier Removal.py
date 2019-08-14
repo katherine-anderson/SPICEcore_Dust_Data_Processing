@@ -68,7 +68,8 @@ volc_rows = cfa[(cfa['Volcanic Event?'] == True)].index.values.tolist()
 # ---------------------------------------------------------------------------------------
 
 print('\n\n-----------------------------------------------------------------------')
-length = 438212 # From error removal script. Update as needed.
+# Get length of dataset from phase 1 cleaning. Use this column to get an accurate count.
+length = cfa['Sum 1.1-12'].count()
 print('\n\nRemoving outliers and contamination signals.')
 print('CFA dataset length after error removal:', length)
 
@@ -95,7 +96,7 @@ cfa.loc[bad_rows, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1', '1.2',
                    'CPP', 'Sum 1.1-12']] = np.nan
 
 # Print number of measurements removed
-print('Rows removed: ', len(bad_rows))
+print('\tRows removed: ', len(bad_rows))
 # Update dataset length
 length = length - len(bad_rows)
 
@@ -167,8 +168,8 @@ if choice == 'Y' or choice == 'y':
 print('\n\nFinished CFA outlier & contamination removal')
 print('\n\tFinal CFA dataset length:', length)
 
-#cfa.to_csv('Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
-#bad_cfa.to_csv('Bad_CFA_Phase2_' + str(date.today()) + '.csv')
+cfa.to_csv('Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
+bad_cfa.to_csv('Bad_CFA_Phase2_' + str(date.today()) + '.csv')
 print('\n\tData exported to CSV. Bad data saved in separate file.')
 print('-----------------------------------------------------------------------')
 
