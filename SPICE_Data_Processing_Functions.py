@@ -164,10 +164,10 @@ def find_cpp(cfa_data):
     # Create dataframe to record particle sums. Needed to prevent dividing by 0
     cpp_df = pd.DataFrame(columns = ['Sum_All', 'Sum_Coarse'])
     
-    col_list = ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', 
-                    '1.9', '2', '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', 
-                    '3.2', '3.6', '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', 
-                    '9', '10', '12']
+    col_list = ['1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', 
+                '2', '2.1', '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', '3.2', 
+                '3.6', '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', 
+                '10', '12']
 
     # Sum particle counts for each measurement using the above columns
     cpp_df['Sum_All'] = cfa_data[col_list].sum(axis = 1)
@@ -282,35 +282,29 @@ def remove_outliers_MAD(cfa_data, dust_indices, volc_indices, background_interva
     overlap = overlap.difference(dust_indices)
     
     # Ask the user whether or not to preserve outliers at volcanic events
-    choice1 = input('\tRemove outliers at volcanic events? Enter Y or N: ')
+    choice1 = input('\tPreserve outliers at volcanic events? Enter Y or N: ')
     # Ask the user whether or not to display # of outliers found & removed
-    choice2 = input('\tPrint results? Enter Y or N: ')
+    choice2 = input('\tPrint detailed MAD outlier counts? Enter Y or N: ')
     
-    if choice1 == 'y' or choice1 == 'Y':
+    if choice1 == 'n' or choice1 == 'N':
         # Remove variable has the indices at which to NaN values
         remove = overlap
-        if choice2 == 'y' or choice2 == 'Y':
-            print('\n\tSummary of MAD outlier removal')
-            print('\t1) Rows Removed: ', len(remove))
-    if choice1 == 'n' or choice1 == 'N':
+    if choice1 == 'y' or choice1 == 'y':
         # Subtract the volcanic event indices from the overlapping outlier indices
         remove = overlap.difference(volc_indices)
-        if choice2 == 'y' or choice2 == 'Y':
-            print('\n\tSummary of MAD outlier removal')
-            print('\t1) Rows Removed: ', len(remove))
     
     # Count number of discrete volcanic events in the rows we're about to remove
     # Get a copy of the CFA data with only the 'New Volcanic Event?' column
     temp_cfa = cfa_data.loc[remove, :].copy()
     volc_event = temp_cfa[(temp_cfa['New Volcanic Event?'] == True)]
     if choice2 == 'y' or choice2 == 'Y':
-        print('\t2) Number of discrete volcanic events in removed rows:', len(volc_event))
+        print('\tNumber of discrete volcanic events in removed rows:', len(volc_event))
         
     # Count number of core breaks in the rows we're about to remove
     temp_cfa = cfa_data.loc[remove, :].copy()
     break_outliers = temp_cfa[(temp_cfa['New Break?'] == True)]
     if choice2 == 'y' or choice2 == 'Y':
-        print('\t3) Number of discrete core breaks in removed rows:    ', len(break_outliers))
+        print('\tNumber of discrete core breaks in removed rows:    ', len(break_outliers))
         
     return remove
 #%%
@@ -411,7 +405,7 @@ def summary_statistics(cfa_data):
         cpp_mad  = median_absolute_deviation(cfa_data['CPP'])
     
         # Skip NaNs when calculating these
-        print('Dust number concentration (/mL):')
+        print('Dust number concentration (#/mL):')
         print('    Mean:   %.2f' % (np.nanmean(number_conc)))
         print('    Median: %.2f' % (np.nanmedian(number_conc)))
         print('    Min:    %.2f' % (np.nanmin(number_conc)))
