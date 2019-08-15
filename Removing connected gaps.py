@@ -16,26 +16,21 @@ directory = input('Enter path for SPICEcore data: ')
 os.chdir(directory)
 
 # Load CFA file
-cfa = pd.read_csv('SPICE_final_sync_unfiltered_24JULY2019.csv')
+cfa = pd.read_csv('Cleaned_CFA_Phase2_2019-08-14.csv')
 # Make sure data are in correct format
-cfa = cfa.replace('#NAME?', np.nan)
-cfa = cfa.astype('float')
+del cfa['Unnamed: 0']
 
 #%%
 
 # Fixing big gaps in depth between measurements
 # To keep Python from connecting large gaps with a single line
 
-# Subtract each row from the one before
-diff = cfa.diff(periods = 1, axis = 0)
+# Subtract each depth value from the one before
+diff = cfa.loc[:, 'Depth (m)'].diff(periods = 1)
 # Get rows where difference in depth is >= 6 cm - encoder precision?
-bad_diff = diff.drop(diff[diff['Depth (m)'] < 0.06].index)
-# Only keep the depth column.
-bad_diff = bad_diff.loc[:, 'Depth (m)']
-# Drop the NaNs in the depth column
-bad_diff = bad_diff.dropna()
-# Get indices of the rows to NaN
-# NaN the first row after a gap in depths >= 6 cm
+bad_diff = diff[(diff >= 0.06)]
+# Get the indices of these rows
 bad_rows = list(bad_diff.index.values)
-# Change values in these rows to NaN
-cfa.loc[bad_rows, :] = np.nan
+# Change the non-boolean values in these rows to NaN
+cfa.loc[bad_rows, 'Depth (m)':'AgeBP'] = np.nan
+cfa.loc[bad_rows, 'Sum 1.1-12':'CPP']  = np.nan
