@@ -298,8 +298,11 @@ def remove_outliers_MAD(cfa_data, dust_indices, volc_indices, background_interva
     if choice1 == 'n' or choice1 == 'N':
         # Remove variable has the indices at which to NaN values
         remove = overlap
-    if choice1 == 'y' or choice1 == 'y':
+    elif choice1 == 'y' or choice1 == 'Y':
         # Subtract the volcanic event indices from the overlapping outlier indices
+        remove = overlap.difference(volc_indices)
+    else:
+        print('Invalid entry. Defaulted to preserving outliers at volcanic events.')
         remove = overlap.difference(volc_indices)
     
     # Count number of discrete volcanic events in the rows we're about to remove
