@@ -123,14 +123,14 @@ length = length - len(bad_rows)
 
 # 4) Filter out rows where depth does not increase and rows with no depth value
 
-# Subtract each row from the one before
-# All NaNs stay NaN
-diff = cfa.diff(periods = 1, axis = 0)
+# Get a copy of the CFA depth values, dropping NaNs
+depth_diff = cfa.loc[:, 'Depth (m)'].dropna()
+# Subtract each depth value from the depth value before
+depth_diff = depth_diff.diff(periods = 1)
+# Drop the first row, which becomes NaN
+depth_diff = depth_diff.dropna()
 # Drop all good rows, where the diff is > 0
-bad_depth = diff.drop(diff[diff['Depth (m)'] > 0].index)
-# Delete all rows with NaN and count remaining bad rows
-bad_depth = bad_depth.dropna()
-
+bad_depth = depth_diff.drop(depth_diff[depth_diff > 0].index)
 # Get a list of all of the indices with bad depth measurements
 bad_rows = list(bad_depth.index.values)
 # Change values in the bad rows to NaN
