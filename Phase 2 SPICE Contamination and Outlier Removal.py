@@ -132,24 +132,24 @@ length = length - len(bad_rows)
 
 # UPDATE THIS FUNCTION WITH AARON'S NEWEST VERSION
 
-outlier_rows, bad_rows = remove_outliers_integrals(cfa, 2, dust_rows, volc_rows)
+#outlier_rows, bad_rows = remove_outliers_integrals(cfa, 2, dust_rows, volc_rows)
 
 # Add bad data to the bad CFA dataframe
-bad_cfa = bad_cfa.append(cfa.loc[bad_rows, :], sort = False)
+#bad_cfa = bad_cfa.append(cfa.loc[bad_rows, :], sort = False)
 # Label error type
-bad_cfa['Error Type'].fillna('Integral Outlier', inplace = True)
+#bad_cfa['Error Type'].fillna('Integral Outlier', inplace = True)
 
 # NaN values in remaining rows, except boolean columns
-cfa.loc[bad_rows, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1', '1.2', 
-                   '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '2', '2.1', 
-                   '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', '3.2', '3.6', '4', 
-                   '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12',
-                   'CPP', 'Sum 1.1-12']] = np.nan
+#cfa.loc[bad_rows, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1', '1.2', 
+#                   '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '2', '2.1', 
+#                   '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', '3.2', '3.6', '4', 
+#                   '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12',
+#                   'CPP', 'Sum 1.1-12']] = np.nan
 
-print('\tRows removed:', len(bad_rows))
+#print('\tRows removed:', len(bad_rows))
 
 # Update dataset length
-length = length - len(bad_rows)
+#length = length - len(bad_rows)
 
 # ADD DATA INTERPOLATION, TAIL CORRECTIONS HERE?
 
