@@ -17,9 +17,26 @@ os.chdir('C:\\Users\\katie\\OneDrive\\Documents\\SPICE\\Data')
 cfa = pd.read_csv('SPICE_final_sync_unfiltered_24JULY2019.csv')
 cfa = cfa.replace('#NAME?', np.nan)
 cfa = cfa.astype('float')
+
+#%% Drafting new function
+ cfa_Jul19 = cfa.loc[cfa['Depth (m)'] >= 302].copy()
+ cfa_Jul19 = cfa_Jul19.loc[cfa_Jul19['Depth (m)'] <  312].copy()
+    
+    # Select only the Abakus columns
+ cfa_Jul19 = cfa_Jul19.loc[:, '1':'12']
+ 
+ new = cfa_Jul19.mul(60)
+    
+    # Update original CFA data with the new values in the corrected dataframe
+ #cfa.update(cfa_Jul19)
+
+cfa.update(new)
+
 #%% Testing
 
 new = correct_meltday(cfa)
+
+
 
 #%% Function definition
 
