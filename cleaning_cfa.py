@@ -172,7 +172,7 @@ cfa.loc[:, '1':'12'] = abakus
 
 # 6) Apply correction to Abakus data from 7/19/2016
 
-print('\tCorrecting errors from one melt day.')
+print('\tCorrecting units for one melt day.')
 
 cfa = correct_meltday(cfa)
 
