@@ -29,8 +29,8 @@ import os
 from   datetime import date
 
 # Ask user for directory where scripts are located
-    directory = input('Enter path for SPICEcore scripts: ')
-    os.chdir(directory)
+directory = input('Enter path for SPICEcore scripts: ')
+os.chdir(directory)
 
 # Ask user whether to run phase 1 cleaning (error removal) from this script
 choice = input('Run SPICEcore error removal script from this file? Enter Y or N: ')
@@ -84,8 +84,8 @@ humps = find_humps(cfa, 0, 1752)
 
 # Remove all rows in real dust events from the hump list
 bad_rows = humps.index.difference(dust_rows)
-# Remove all rows in real volcanic events from the hump list
-bad_rows = humps.index.difference(volc_rows)
+# Subsequently remove all rows in real volcanic events from the hump list
+bad_rows = bad_rows.difference(volc_rows)
 
 # Save all bad data into a separate dataframe
 bad_cfa = cfa.loc[bad_rows, :].copy()
