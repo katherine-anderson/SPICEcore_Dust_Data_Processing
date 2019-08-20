@@ -61,7 +61,7 @@ dust_events = pd.read_excel('Dust_Events.xlsx')
 # Get original length of the CFA dataset, so errors can be tracked
 original_length = len(cfa)
 print('\n\n---------------------------------------------------------------------------------')
-print('Filtering errors from liquid conductivity, flow rate, Abakus, and depth data.')
+print('Filtering errors from liquid conductivity, flow rate, depth, and Abakus data.')
 print('Original CFA dataset length:', original_length)
 
 # 1) Remove data reflecting bubbles with liquid conductivity values 
@@ -121,7 +121,8 @@ print('\tNo/negative flow rate errors:', len(bad_rows))
 # Update dataset length
 length = length - len(bad_rows)
 
-# 4) Filter out rows where depth does not increase and rows with no depth value
+# 4) Filter out rows where depth does not increase, rows with no depth value, 
+#    and adjacent rows which have discontinous depth values
 
 # Get a copy of the CFA depth values, dropping NaNs
 depth_diff = cfa.loc[:, 'Depth (m)'].dropna()
@@ -157,7 +158,24 @@ print('\tRows without depth data:     ', len(bad_rows))
 # Update dataset length
 length = length - len(bad_rows)
 
-# 5) Filter out any infinite or negative Abakus values. Check that NaN'd rows are completely NaN'd
+# Remove the first row following a large gap in depth values
+# Replace this row with NaN so the data are not plotted as continuous data across the interval
+
+# Subtract each depth value from the one before
+depth_diff = cfa.loc[:, 'Depth (m)'].diff(periods = 1)
+# Get rows where difference in depth is >= 6 cm
+# Don't drop the NaNs. Want to select only adjacent rows where depth jumps by 6 cm
+bad_depth = depth_diff[(depth_diff >= 0.06)]
+# Get the indices of these rows
+bad_rows = list(bad_depth.index.values)
+# Change the non-boolean values in these rows to NaN
+cfa.loc[bad_rows, :]  = np.nan
+
+print('\n\tRemoving ' + str(len(bad_rows)) + ' rows immediately following depth discontinuities.')
+# Update dataset length
+length = length - len(bad_rows)
+
+# 5) Filter out any infinite or negative Abakus values
 
 print('\tRemoving negative Abakus values.')
 # Get rid of any individual inf. values (just in case)
