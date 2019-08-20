@@ -249,6 +249,8 @@ cfa.loc[dust_rows, 'Dust Event?'] = True
 # 10) Calculate particle concentration and CPP
 
 print('Calculating particle concentration and CPP.')
+# Get Boolean values for NaN'd rows
+depth_isnull = cfa['Depth (m)'].isnull()
 # Select the rows that aren't completely NaN'd
 valid_depth = depth_isnull[depth_isnull == False]
 # Get indices of these rows
