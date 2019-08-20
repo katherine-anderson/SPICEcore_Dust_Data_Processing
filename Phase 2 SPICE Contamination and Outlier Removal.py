@@ -28,16 +28,19 @@ import pandas as pd
 import os
 from   datetime import date
 
+# Ask user for directory where scripts are located
+    directory = input('Enter path for SPICEcore scripts: ')
+    os.chdir(directory)
+
 # Ask user whether to run phase 1 cleaning (error removal) from this script
 choice = input('Run SPICEcore error removal script from this file? Enter Y or N: ')
 if choice == 'y' or choice == 'Y':
+    
+    # Run phase 1 cleaning script
     exec(open('cleaning_cfa.py').read())
 
 # Ask user for directory where data are located
 else: 
-    # Ask user for directory where scripts are located
-    directory = input('Enter path for SPICEcore scripts: ')
-    os.chdir(directory)
     
     # Run function definitions script. It's included in the phase 1 script
     exec(open('SPICE_Data_Processing_Functions.py').read())
