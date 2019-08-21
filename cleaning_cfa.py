@@ -16,7 +16,7 @@
 #   10) Calculates particle concentration and coarse particle percentage (CPP)
 #   11) Exports cleaned dataset to CSV
 #
-# Katie Anderson and Aaron Chesler, 8/13/19
+# Katie Anderson and Aaron Chesler, 8/21/19
 # ------------------------------------------------------------------------------------------------------
 
 #%%
@@ -41,11 +41,8 @@ exec(open('SPICE_Data_Processing_Functions.py').read())
 directory = input('Enter path for SPICEcore data: ')
 os.chdir(directory)
 
-# Load CFA file
-cfa = pd.read_csv('SPICE_final_sync_unfiltered_24JULY2019.csv')
-# Make sure data are in correct format
-cfa = cfa.replace('#NAME?', np.nan)
-cfa = cfa.astype('float')
+# Use a function to load the Matlab CFA data
+cfa = load_data()
 
 # Load other needed files
 volcanic_record = pd.read_excel('Full_final_volcanic_record_7August2019.xlsx')

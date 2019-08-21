@@ -1,25 +1,73 @@
-# In[1]:
-
-
 # Script with function definitions. This way, the commands for each calculation can just be written once.
 #
-# Katie Anderson, 8/13/19
+# Katie Anderson, 8/21/19
 #
 # List of functions:
 #
-#  1) correct_meltday:           Corrects low Abakus values during melt day 7/19/2016
-#  2) label_core_breaks:         Get a list of indices for each CFA row near a core break (by depth)
-#  3) label_volc_events:         Get a list of indices for each row in a volcanic window (by age)
-#  4) label_dust_events:         Get a list of indices for each row in a dust event (by depth)
-#  5) find_cpp:                  Calculate CPP for a CFA dataframe
-#  6) find_humps:                Find hump-shaped PSD anomalies in a CFA dataframe
-#  7) median_absolute_deviation: Calculate MAD for one column of CFA data
-#  8) remove_outliers_MAD:       Remove outliers from the CFA data, using MAD
-#  9) remove_outliers_integrals: Get a list of indices with an integral outlier
-# 10) summary_statistics:        Print summary statistics for dust concentration & CPP during data cleaning
+#  1) load_data:                 Loads CFA data from Matlab file into Python dataframe
+#  2) correct_meltday:           Corrects low Abakus values during melt day 7/19/2016
+#  3) label_core_breaks:         Get a list of indices for each CFA row near a core break (by depth)
+#  4) label_volc_events:         Get a list of indices for each row in a volcanic window (by age)
+#  5) label_dust_events:         Get a list of indices for each row in a dust event (by depth)
+#  6) find_cpp:                  Calculate CPP for a CFA dataframe
+#  7) find_humps:                Find hump-shaped PSD anomalies in a CFA dataframe
+#  8) median_absolute_deviation: Calculate MAD for one column of CFA data
+#  9) remove_outliers_MAD:       Remove outliers from the CFA data, using MAD
+# 10) remove_outliers_integrals: Get a list of indices with an integral outlier
+# 11) summary_statistics:        Print summary statistics for dust concentration & CPP during data cleaning
 
 #%%
-# 1)
+# Function to load Matlab CFA data into Python dataframe
+# Inputs: None
+# Output: CFA dataframe
+
+def load_data():
+    
+    # Import Matlab module
+    from scipy.io import loadmat
+    # Read main variable from Matlab file
+    mat = loadmat('CFA_Unfiltered_Synchronized_8_20_19.mat')
+    mdata = mat['FinalCFA']
+    
+    # Create dataframe and add first column
+    original_cfa = pd.DataFrame({'Depth (m)':mdata[:,0]})
+    # Add remaining columns
+    original_cfa['Flow Rate'] = mdata[:,1]
+    original_cfa['ECM'] = mdata[:,2]
+    original_cfa['1']   = mdata[:,3]
+    original_cfa['1.1'] = mdata[:,4]
+    original_cfa['1.2'] = mdata[:,5]
+    original_cfa['1.3'] = mdata[:,6]
+    original_cfa['1.4'] = mdata[:,7]
+    original_cfa['1.5'] = mdata[:,8]
+    original_cfa['1.6'] = mdata[:,9]
+    original_cfa['1.7'] = mdata[:,10]
+    original_cfa['1.8'] = mdata[:,11]
+    original_cfa['1.9'] = mdata[:,12]
+    original_cfa['2']   = mdata[:,13]
+    original_cfa['2.1'] = mdata[:,14]
+    original_cfa['2.2'] = mdata[:,15]
+    original_cfa['2.3'] = mdata[:,16]
+    original_cfa['2.4'] = mdata[:,17]
+    original_cfa['2.5'] = mdata[:,18]
+    original_cfa['2.7'] = mdata[:,19]
+    original_cfa['2.9'] = mdata[:,20]
+    original_cfa['3.2'] = mdata[:,21]
+    original_cfa['3.6'] = mdata[:,22]
+    original_cfa['4']   = mdata[:,23]
+    original_cfa['4.5'] = mdata[:,24]
+    original_cfa['5.1'] = mdata[:,25]
+    original_cfa['5.7'] = mdata[:,26]
+    original_cfa['6.4'] = mdata[:,27]
+    original_cfa['7.2'] = mdata[:,28]
+    original_cfa['8.1'] = mdata[:,29]
+    original_cfa['9']   = mdata[:,30]
+    original_cfa['10']  = mdata[:,31]
+    original_cfa['12']  = mdata[:,32]
+    
+    return original_cfa
+    
+#%%
 # Function to correct anomalously low Abakus values during melt day 7/19/2019
 # Inputs: CFA dataframe
 # Output: Corrected CFA dataframe
@@ -45,7 +93,6 @@ def correct_meltday(cfa_data):
     return(cfa)
 
 #%%
-# 2)
 # Function to get indices of all CFA measurements taken within a specified core break range
 # Inputs: CFA dataframe, core breaks dataframe, specified +/- core break range (in meters)
 # Output: List of rows within core breaks
@@ -73,7 +120,6 @@ def label_core_breaks(cfa_data, core_breaks, core_range):
     # Return list of indices occurring within core breaks
     return break_true, new_break
 #%%
-# 3)
 # Function to get indices of all CFA measurements taken within range of years around volcanic events
 # Inputs: Holocene CFA, Holocene volcanic dates, before/after buffers, in years
 # Output: List of rows within volcanic range
@@ -100,7 +146,6 @@ def label_volc_events(cfa_data, volc_record, start_buffer, end_buffer):
     # Return list of rows within buffer dates of volcanic events
     return volc_true, new_volc
 #%%
-# 4)
 # Function to get a list of rows within dust events
 # Inputs: CFA data, dust event dataframe with depth intervals
 # Output: List of rows within dust events
@@ -123,7 +168,6 @@ def label_dust_events(cfa_data, dust_depths):
     # Return list of rows within dust events 
     return dust_event_true
 #%%
-# 5) 
 # Function to calculate CPP per measurement
 # Input: CFA data
 # Output: List of CPP for each row
@@ -162,7 +206,6 @@ def find_cpp(cfa_data):
     return(cpp_df['Sum_Coarse'] / cpp_df['Sum_All'] * 100)
 
 #%%
-# 6) 
 # Identifies CFA measurements with hump PSD anomalies
 # Inputs: CFA data and the min/max depths in which to find the humps
 # Output: CFA dataframe with only the hump measurements
@@ -219,7 +262,6 @@ def find_humps(cfa_data, min_depth, max_depth):
     
     return cfa_data
 #%%
-# 7)  
 # Function to calculate Median Absolute Deviation (MAD)
 # Inputs: One-dimensional dataset (like CFA particle concentration or CPP)
 # Output: MAD
@@ -231,7 +273,6 @@ def median_absolute_deviation(x, axis = None):
     # Return the median of that deviation
     return deviation.median()
 #%%
-# 8) 
 # Function to remove outliers given different background & sensitivity conditions
 # Inputs: CFA data, list of dust event rows, list of volcanic event rows, background window size, MAD threshold
 # Outputs: Dataframe with overlapping outliers removed, list of outlier indices
@@ -288,7 +329,6 @@ def remove_outliers_MAD(cfa_data, dust_indices, volc_indices, background_interva
         
     return remove
 #%%
-# 9) 
 # Function to remove outliers using rolling 2-pt integrals (Aaron)
 # Inputs: CFA data, stdev threshold above median, list of dust event rows, list of volcanic rows
 # Output: List of rows to remove from the CFA data
@@ -365,7 +405,6 @@ def remove_outliers_integrals(cfa_data, threshold, dust_indices, volc_indices):
     # Return list of outlier rows and the rows to remove
     return overlap, remove
   #%%  
-# 10)    
 # Function to print summary statistics for dust concentration & CPP during data cleaning
 #     Inputs: CFA dataframe with particle sum and CPP columns
 #     Output: None. Prints summary statistics.
