@@ -183,8 +183,8 @@ def find_cpp(cfa_data):
                 '10', '12']
     
     # Select the non-NaN CFA rows
-    depth_isnull = cfa_data['Depth (m)'].isnull()
-    valid_depth = depth_isnull[depth_isnull == False]
+    flow_isnull = cfa_data['Flow Rate'].isnull()
+    valid_depth = flow_isnull[flow_isnull == False]
     # Get the indices of these rows
     valid_depth = list(valid_depth.index.values)
     # Select these rows in the CFA data

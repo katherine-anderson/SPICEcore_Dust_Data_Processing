@@ -27,7 +27,7 @@
 # Import needed modules & packages
 import pandas as pd
 import os 
-import numpy as np
+import numpy  as np
 from datetime import date
 
 # Ask user for directory where scripts are located
@@ -56,7 +56,7 @@ dust_events = pd.read_excel('Dust_Events.xlsx')
 # ------------------------------------------------------------------------------------------------------
 
 # Get original length of the CFA dataset, so errors can be tracked
-original_length = len(cfa)
+original_length = cfa['Flow Rate'].count()
 print('\n\n---------------------------------------------------------------------------------')
 print('Filtering errors from liquid conductivity, flow rate, depth, and Abakus data.')
 print('Original CFA dataset length:', original_length)
@@ -79,7 +79,7 @@ for i in range(1, len(cfa['Depth (m)']) - 1):
             slope2 = (cfa['ECM'][i + 1] - cfa['ECM'][i]) / (cfa['Depth (m)'][i + 1] - cfa['Depth (m)'][i]) 
             if slope2 >= threshold_bubbles: # If slope1 <= 0 and slope2 >= 0, it's a bubble                       
                 bubbles = bubbles + 1
-                cfa.loc[i] = np.nan # Change all values in row to NaN
+                cfa.loc[i, 'Flow Rate':'12'] = np.nan # Change all values in row to NaN
                 
 print('\n\tBubble errors:               ', bubbles)
 # Update dataset length
@@ -96,7 +96,7 @@ bad_ecm = bad_ecm.where(bad_ecm < 0.6)
 bad_rows = bad_ecm[bad_ecm.notnull()]
 bad_rows = list(bad_rows.index.values)
 # Change values in the bad rows to NaN
-cfa.loc[bad_rows, :] = np.nan
+cfa.loc[bad_rows, 'Flow Rate':'12'] = np.nan
 
 print('\tLiquid conductivity < 0.6:   ', len(bad_rows))
 # Update dataset length
@@ -105,14 +105,14 @@ length = length - len(bad_rows)
 # 3) Filter out data without positive flow rate values
 
 # Drop all good rows, where flow rate isn't > 0, and count remaining bad rows
-bad_flow = cfa['Flow Rate'].dropna()
+bad_flow = cfa.loc[:, 'Flow Rate'].dropna()
 # Find rows with bad flow rate values-- will NaN the good values
 bad_flow = bad_flow.where(bad_flow <= 0)
 # Get the indices of the non-NaN (a.k.a., the bad) rows
 bad_rows = bad_flow[bad_flow.notnull()]
 bad_rows = list(bad_rows.index.values)
 # Change all values in the bad rows to NaN
-cfa.loc[bad_rows, :] = np.nan
+cfa.loc[bad_rows, 'Flow Rate':'12'] = np.nan
 
 print('\tNo/negative flow rate errors:', len(bad_rows))
 # Update dataset length
@@ -122,8 +122,12 @@ length = length - len(bad_rows)
 #    adjacent rows which have discontinous depth values, and rows with 
 #    overlapping depths
 
-# Get a copy of the CFA depth values, dropping NaNs
-depth_diff = cfa.loc[:, 'Depth (m)'].dropna()
+# Drop all rows where everything but depth has been NaN'd
+not_null = cfa.loc[:, 'Flow Rate'].dropna()
+# Get indices of rows with depth and Abakus data
+not_null = list(not_null.index.values)
+# Get a copy of the CFA depth values, dropping NaN'd depths
+depth_diff = cfa.loc[not_null, 'Depth (m)'].dropna()
 # Subtract each depth value from the depth value before
 depth_diff = depth_diff.diff(periods = 1)
 # Drop the first row, which becomes NaN
@@ -145,7 +149,7 @@ depth_isnull = cfa['Depth (m)'].isnull()
 null_depth = depth_isnull[depth_isnull == True]
 # Get the indices of these rows
 null_depth = list(null_depth.index.values)
-# Get the rows with NaN depth values, but non-NaN Abakus values
+# Make sure to select NaN depth values and non-NaN Abakus values
 bad_rows = cfa.loc[null_depth, :].dropna(how = 'all')
 # Convert to indices
 bad_rows = list(bad_rows.index.values)
@@ -159,13 +163,17 @@ length = length - len(bad_rows)
 # Remove the first row following a large gap in depth values
 # Replace this row with NaN so the data are not plotted as continuous data across the interval
 
+# Make a copy of the depth and flow data. Don't drop the NaN'd rows
+depth_diff = cfa.loc[:, 'Depth (m)':'Flow Rate'].copy()
 # Subtract each depth value from the one before
-depth_diff = cfa.loc[:, 'Depth (m)'].diff(periods = 1)
+depth_diff = depth_diff.diff(periods = 1)
 # Get rows where difference in depth is >= 6 cm
 # Don't drop the NaNs. Want to select only adjacent rows where depth jumps by 6 cm
-bad_depth = depth_diff[(depth_diff >= 0.06)]
+bad_depth = depth_diff[(depth_diff['Depth (m)'] >= 0.06)]
+# Remove indices of rows with NaN'd flow rate & Abakus data from this list
+bad_rows = bad_depth.loc[:, 'Flow Rate'].dropna()
 # Get the indices of these rows
-bad_rows = list(bad_depth.index.values)
+bad_rows = list(bad_rows.index.values)
 # Change the values in these rows to NaN
 cfa.loc[bad_rows, :]  = np.nan
 
@@ -174,6 +182,7 @@ print('\n\tRemoving ' + str(len(bad_rows)) + ' rows immediately following depth 
 length = length - len(bad_rows)
 
 # Remove group of rows which overlap with depths from previous rows
+# CHANGE THIS WHEN WE ADD ROWS TO RAW DATA
 bad_rows = [383827, 383828, 383829, 383830, 383831, 383832, 383833]
 # Change the values in these rows to NaN
 cfa.loc[bad_rows, :] = np.nan
@@ -256,9 +265,9 @@ cfa.loc[dust_rows, 'Dust Event?'] = True
 
 print('Calculating particle concentration and CPP.')
 # Get Boolean values for NaN'd rows
-depth_isnull = cfa['Depth (m)'].isnull()
+flow_isnull = cfa['Flow Rate'].isnull()
 # Select the rows that aren't completely NaN'd
-valid_depth = depth_isnull[depth_isnull == False]
+valid_depth = flow_isnull[flow_isnull == False]
 # Get indices of these rows
 valid_depth = list(valid_depth.index.values)
 # Select the non-NaN CFA rows for concentration (ignoring bin 1)
