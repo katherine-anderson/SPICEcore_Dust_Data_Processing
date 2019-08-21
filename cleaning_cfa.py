@@ -119,7 +119,8 @@ print('\tNo/negative flow rate errors:', len(bad_rows))
 length = length - len(bad_rows)
 
 # 4) Filter out rows where depth does not increase, rows with no depth value, 
-#    and adjacent rows which have discontinous depth values
+#    adjacent rows which have discontinous depth values, and rows with 
+#    overlapping depths
 
 # Get a copy of the CFA depth values, dropping NaNs
 depth_diff = cfa.loc[:, 'Depth (m)'].dropna()
@@ -165,11 +166,19 @@ depth_diff = cfa.loc[:, 'Depth (m)'].diff(periods = 1)
 bad_depth = depth_diff[(depth_diff >= 0.06)]
 # Get the indices of these rows
 bad_rows = list(bad_depth.index.values)
-# Change the non-boolean values in these rows to NaN
+# Change the values in these rows to NaN
 cfa.loc[bad_rows, :]  = np.nan
 
 print('\n\tRemoving ' + str(len(bad_rows)) + ' rows immediately following depth discontinuities.')
 # Update dataset length
+length = length - len(bad_rows)
+
+# Remove group of rows which overlap with depths from previous rows
+bad_rows = [383827, 383828, 383829, 383830, 383831, 383832, 383833]
+# Change the values in these rows to NaN
+cfa.loc[bad_rows, :] = np.nan
+print('\tRemoving ' + str(len(bad_rows)) + ' rows with overlapping depths.')
+# Updata dataset length
 length = length - len(bad_rows)
 
 # 5) Filter out any infinite or negative Abakus values
