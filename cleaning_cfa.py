@@ -23,7 +23,7 @@
 # ------------------------------------------------------------------------------------------------------
 #                                           1: FILE PREPARATION
 # ------------------------------------------------------------------------------------------------------
-
+print('\n\n---------- SPICEcore Dust Data Phase 1 Cleaning ----------')
 # Import needed modules & packages
 import pandas as pd
 import os 
@@ -209,13 +209,18 @@ print('\tCorrecting units for one melt day.')
 
 cfa = correct_meltday(cfa)
 
-# 7) Interpolate ages for the CFA rows
+# 7) Interpolate depths and ages for the CFA rows
 
-# Need to do this before adding in the volcanic events
-print('\nInterpolating timescale.')
+print('\nInterpolating depth values in blank rows.')
+# Linearly interpolate over NaN'd depths, so final interpolation can use ages
+years_interp = cfa['Depth (m)'].interpolate(method = 'linear')
+cfa['Depth (m)'] = years_interp
+
+# Need to interpolate ages before adding in the volcanic events
+print('Interpolating timescale.')
 
 #Interpolate ages for SPICEcore timescale
-years_interp = pd.Series(np.interp(cfa['Depth (m)'] ,annual_depths['Depth (m)'],annual_depths['Age (Years Before 1950)'] ))
+years_interp = pd.Series(np.interp(cfa['Depth (m)'], annual_depths['Depth (m)'], annual_depths['Age (Years Before 1950)']))
 cfa['AgeBP'] = years_interp
 
 # 8) Label each CFA row near core breaks
