@@ -3,6 +3,7 @@
 # Removes melting errors in the raw CFA data, interpolates timescale, and adds descriptive columns
 #
 #    - Loads raw, unfiltered CFA with depth corrections
+#    - Loads supporting datafiles
 #    - Tracks the number of measurements NaN'ed in each step
 #    1) NaNs bubbles using liquid conductivity data
 #    2) NaNs liquid conductivity values < 0.6
@@ -23,7 +24,10 @@
 # ------------------------------------------------------------------------------------------------------
 #                                           1: FILE PREPARATION
 # ------------------------------------------------------------------------------------------------------
-print('\n\n---------- SPICEcore Dust Data Phase 1 Cleaning ----------')
+print('\n\n.......................................................')
+print('  SPICEcore Dust Data Phase 1 Cleaning: Melter Errors')
+print('.......................................................')
+
 # Import needed modules & packages
 import pandas as pd
 import os 
@@ -41,8 +45,10 @@ exec(open('SPICE_Data_Processing_Functions.py').read())
 directory = input('Enter path for SPICEcore data: ')
 os.chdir(directory)
 
-# Use a function to load the Matlab CFA data
-cfa = load_data()
+# Load CSV CFA data as floats
+cfa = pd.read_csv('CFA_Unfiltered_Synchronized_8_20_19.csv', dtype = 'float')
+# Delete unnecessary column
+del cfa['Unnamed: 0']
 
 # Load other needed files
 volcanic_record = pd.read_excel('Full_final_volcanic_record_7August2019.xlsx')
@@ -118,9 +124,7 @@ print('\tNo/negative flow rate errors:', len(bad_rows))
 # Update dataset length
 length = length - len(bad_rows)
 
-# 4) Filter out rows where depth does not increase, rows with no depth value, 
-#    adjacent rows which have discontinous depth values, and rows with 
-#    overlapping depths
+# 4) Filter out rows where depth does not increase and rows with no depth value
 
 # Drop all rows where everything but depth has been NaN'd
 not_null = cfa.loc[:, 'Flow Rate'].dropna()
@@ -160,40 +164,10 @@ print('\tRows without depth data:     ', len(bad_rows))
 # Update dataset length
 length = length - len(bad_rows)
 
-# Remove the first row following a large gap in depth values
-# Replace this row with NaN so the data are not plotted as continuous data across the interval
-
-# Make a copy of the depth and flow data. Don't drop the NaN'd rows
-depth_diff = cfa.loc[:, 'Depth (m)':'Flow Rate'].copy()
-# Subtract each depth value from the one before
-depth_diff = depth_diff.diff(periods = 1)
-# Get rows where difference in depth is >= 6 cm
-# Don't drop the NaNs. Want to select only adjacent rows where depth jumps by 6 cm
-bad_depth = depth_diff[(depth_diff['Depth (m)'] >= 0.06)]
-# Remove indices of rows with NaN'd flow rate & Abakus data from this list
-bad_rows = bad_depth.loc[:, 'Flow Rate'].dropna()
-# Get the indices of these rows
-bad_rows = list(bad_rows.index.values)
-# Change the values in these rows to NaN
-cfa.loc[bad_rows, :]  = np.nan
-
-print('\n\tRemoving ' + str(len(bad_rows)) + ' rows immediately following depth discontinuities.')
-# Update dataset length
-length = length - len(bad_rows)
-
-# Remove group of rows which overlap with depths from previous rows
-# CHANGE THIS WHEN WE ADD ROWS TO RAW DATA
-bad_rows = [383827, 383828, 383829, 383830, 383831, 383832, 383833]
-# Change the values in these rows to NaN
-cfa.loc[bad_rows, :] = np.nan
-print('\tRemoving ' + str(len(bad_rows)) + ' rows with overlapping depths.')
-# Updata dataset length
-length = length - len(bad_rows)
-
 # 5) Filter out any infinite or negative Abakus values
 
-print('\tRemoving negative Abakus values.')
-# Get rid of any individual inf. values (just in case)
+print('\tRemoving infinite and negative Abakus values.')
+# Replace 'infinites' with NaNs
 cfa = cfa.replace([np.inf, -np.inf], np.nan)
 
 # Get a copy of just the Abakus columns
@@ -288,7 +262,7 @@ cfa['CPP'] = find_cpp(cfa)
 # 10) Export CFA file to CSV. Report final length.
 print('\nFinished CFA error removal')
 print('\tFinal CFA dataset length:', length)
-cfa.to_csv('../Data/Cleaned_CFA_Phase1_' + str(date.today()) + '.csv')
+cfa.to_csv('Cleaned_CFA_Phase1_' + str(date.today()) + '.csv')
       
 print('\tData exported to CSV.')
 print('---------------------------------------------------------------------------------')
