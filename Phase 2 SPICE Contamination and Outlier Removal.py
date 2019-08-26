@@ -11,6 +11,7 @@
 #        1) PSD hump anomaly
 #        2) MAD outliers
 #        3) Integral outliers
+#        4) Manually-identified issues which remain
 #    - Prints summary statistics
 #    - Saves cleaned and 'bad' data to two separate files
 #
@@ -74,6 +75,9 @@ dust_rows = cfa[(cfa['Dust Event?'] == True)].index.values.tolist()
 # Get the row indices of all measurements within volcanic events
 # These rows will be preserved during subsequent data cleaning
 volc_rows = cfa[(cfa['Volcanic Event?'] == True)].index.values.tolist()
+
+# Load file with depth intervals for manual data removal
+manual = pd.read_excel('CFA_Manual_Cleaning.xlsx')
 
 #%%
 # ---------------------------------------------------------------------------------------
@@ -161,9 +165,38 @@ length = length - len(bad_rows)
 # Update dataset length
 #length = length - len(bad_rows)
 
-# ADD MANUAL REMOVAL HERE, BEFORE SUMMARY STATISTICS?
+# 4) Remove remaining manually-identified issues
+print('\nManually removing remaining issues.')
+# Create empty dataframe to collect intervals to remove
+remove_manually = pd.DataFrame()
 
-# 4) Compute summary statistics before and after phase 2 cleaning, if requested
+# Loop through each depth interval in the manual removal file
+for start, end in zip(manual['Depth Start (m)'], manual['Depth End (m)']):
+    # Subset the CFA data for each depth interval
+    selection = select_cfa(cfa, start, end, 'Depth (m)')
+    # Append subsetted data to dataframe of data to remove manually
+    remove_manually = remove_manually.append(selection, sort = False)
+
+# Drop all rows where everything but depth has already been NaN'd
+bad_rows = remove_manually.loc[:, 'Flow Rate'].dropna()
+# Get indices of remaining rows
+bad_rows = list(bad_rows.index.values)
+# Add bad data to the bad CFA dataframe
+bad_cfa = bad_cfa.append(cfa.loc[bad_rows, :], sort = False)
+# Label error type
+bad_cfa['Error Type'].fillna('Manual Removal', inplace = True)
+
+# NaN values in the bad rows, except depth, age, & boolean columns
+cfa.loc[bad_rows, ['Flow Rate', 'ECM', '1', '1.1', '1.2', '1.3', '1.4', '1.5', 
+                   '1.6', '1.7', '1.8', '1.9', '2', '2.1', '2.2', '2.3', '2.4', 
+                   '2.5', '2.7', '2.9', '3.2', '3.6', '4', '4.5', '5.1', '5.7', 
+                   '6.4', '7.2', '8.1', '9', '10', '12', 'CPP', 'Sum 1.1-12']] = np.nan
+
+print('\tRows removed: ', len(bad_rows))
+# Update dataset length
+length = length - len(bad_rows)
+
+# 5) Compute summary statistics before and after phase 2 cleaning, if requested
 
 choice = input('Print summary statistics? Enter Y or N: ')
 if choice == 'Y' or choice == 'y':
@@ -173,10 +206,12 @@ if choice == 'Y' or choice == 'y':
     summary_statistics(cfa_phase1)
     print('\n--Phase 2 Cleaning Results--')
     summary_statistics(cfa)
-
+    
+#
 # ADD DATA INTERPOLATIO HERE, AFTER SUMMARY STATISTICS?
-
-# 5) Export CFA file to CSV. Report final length.
+#
+    
+# 6) Export CFA file to CSV. Report final length.
 print('\n\nFinished CFA outlier & contamination removal')
 print('\n\tFinal CFA dataset length:', length)
 
