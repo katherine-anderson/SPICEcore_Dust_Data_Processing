@@ -13,7 +13,8 @@
 #  7) median_absolute_deviation: Calculate MAD for one column of CFA data
 #  8) remove_outliers_MAD:       Remove outliers from the CFA data, using MAD
 #  9) remove_outliers_integrals: Get a list of indices with an integral outlier
-# 10) summary_statistics:        Print summary statistics for dust concentration & CPP during data cleaning
+# 10) select_cfa:                Subset CFA data for given depth or age range
+# 11) summary_statistics:        Print summary statistics for dust concentration & CPP during data cleaning
     
 #%%
 # Function to correct anomalously low Abakus values during melt day 7/19/2019
@@ -352,7 +353,25 @@ def remove_outliers_integrals(cfa_data, threshold, dust_indices, volc_indices):
 
     # Return list of outlier rows and the rows to remove
     return overlap, remove
-  #%%  
+#%%
+# Function to subset CFA data for given depth or age range
+#     Inputs: CFA dataframe, starting value, ending value, how ('Depth' or 'Age')
+#     Outputs: Subset of CFA data
+
+def select_cfa(cfa_data, lower, upper, variable):
+    
+    if variable == 'Depth (m)':
+        cfa_data = cfa_data[cfa_data['Depth (m)'] >= lower]
+        cfa_data = cfa_data[cfa_data['Depth (m)'] <  upper]
+        return cfa_data
+    elif variable == 'AgeBP':
+        cfa_data = cfa_data[cfa_data['AgeBP'] >= lower]
+        cfa_data = cfa_data[cfa_data['AgeBP'] <  upper]
+        return cfa_data
+    else:
+        print('Invalid entry')
+        return cfa_data
+#%%  
 # Function to print summary statistics for dust concentration & CPP during data cleaning
 #     Inputs: CFA dataframe with particle sum and CPP columns
 #     Output: None. Prints summary statistics.
@@ -389,4 +408,3 @@ def summary_statistics(cfa_data):
         print('    MAD:    %.2f' % cpp_mad)
         
     else: print('Input data with particle sum and CPP columns')
-
