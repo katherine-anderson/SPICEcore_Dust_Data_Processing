@@ -14,14 +14,14 @@
 #    - Prints summary statistics
 #    - Saves cleaned and 'bad' data to two separate files
 #
-# Aaron Chesler and Katie Anderson, 8/13/19
+# Aaron Chesler and Katie Anderson, 8/26/19
 # ---------------------------------------------------------------------------------------
 #%%
 # ---------------------------------------------------------------------------------------
 #                               1: FILE PREPARATION
 # ---------------------------------------------------------------------------------------
 print('\n\n...................................................................')
-print('  SPICEcore Dust Data Phase 2 Cleaning: Outliers and Contamination')
+print('                 SPICECORE DUST DATA PROCESSING')
 print('...................................................................')
 # Import modules and packages
 import numpy  as np
@@ -40,10 +40,18 @@ if choice == 'y' or choice == 'Y':
     
     # Run phase 1 cleaning script
     exec(open('cleaning_cfa.py').read())
-
+    
+    # Print header for next part
+    print('\n\n...................................................................')
+    print('  SPICEcore Dust Data Phase 2 Cleaning: Outliers and Contamination')
+    print('...................................................................')
 # Ask user for directory where data are located
 else: 
-    
+    # Print header
+    print('\n\n...................................................................')
+    print('  SPICEcore Dust Data Phase 2 Cleaning: Outliers and Contamination')
+    print('...................................................................')
+
     # Run function definitions script. It's included in the phase 1 script
     exec(open('SPICE_Data_Processing_Functions.py').read())
     
@@ -93,12 +101,11 @@ bad_rows = bad_rows.difference(volc_rows)
 bad_cfa = cfa.loc[bad_rows, :].copy()
 bad_cfa['Error Type'] = 'PSD Hump Anomaly'
 
-# NaN values in the bad rows in the original CFA data, except boolean columns
-cfa.loc[bad_rows, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1', '1.2', 
-                   '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '2', '2.1', 
-                   '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', '3.2', '3.6', '4', 
-                   '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12',
-                   'CPP', 'Sum 1.1-12']] = np.nan
+# NaN values in the bad rows, except depth, age, & boolean columns
+cfa.loc[bad_rows, ['Flow Rate', 'ECM', '1', '1.1', '1.2', '1.3', '1.4', '1.5', 
+                   '1.6', '1.7', '1.8', '1.9', '2', '2.1', '2.2', '2.3', '2.4', 
+                   '2.5', '2.7', '2.9', '3.2', '3.6', '4', '4.5', '5.1', '5.7', 
+                   '6.4', '7.2', '8.1', '9', '10', '12', 'CPP', 'Sum 1.1-12']] = np.nan
 
 # Print number of measurements removed
 print('\tRows removed: ', len(bad_rows))
@@ -121,12 +128,11 @@ bad_cfa = bad_cfa.append(cfa.loc[bad_rows, :], sort = False)
 # Label error type
 bad_cfa['Error Type'].fillna('MAD Outlier', inplace = True)
 
-# NaN values in the bad rows in the original CFA data, except boolean columns
-cfa.loc[bad_rows, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1', '1.2', 
-                   '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '2', '2.1', 
-                   '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', '3.2', '3.6', '4', 
-                   '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12',
-                   'CPP', 'Sum 1.1-12']] = np.nan
+# NaN values in the bad rows, except depth, age, & boolean columns
+cfa.loc[bad_rows, ['Flow Rate', 'ECM', '1', '1.1', '1.2', '1.3', '1.4', '1.5', 
+                   '1.6', '1.7', '1.8', '1.9', '2', '2.1', '2.2', '2.3', '2.4', 
+                   '2.5', '2.7', '2.9', '3.2', '3.6', '4', '4.5', '5.1', '5.7', 
+                   '6.4', '7.2', '8.1', '9', '10', '12', 'CPP', 'Sum 1.1-12']] = np.nan
 
 print('\tRows removed: ', len(bad_rows))
 
@@ -144,19 +150,18 @@ length = length - len(bad_rows)
 # Label error type
 #bad_cfa['Error Type'].fillna('Integral Outlier', inplace = True)
 
-# NaN values in remaining rows, except boolean columns
-#cfa.loc[bad_rows, ['Depth (m)', 'AgeBP', 'Flow Rate', 'ECM', '1', '1.1', '1.2', 
-#                   '1.3', '1.4', '1.5', '1.6', '1.7', '1.8', '1.9', '2', '2.1', 
-#                   '2.2', '2.3', '2.4', '2.5', '2.7', '2.9', '3.2', '3.6', '4', 
-#                   '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12',
-#                   'CPP', 'Sum 1.1-12']] = np.nan
+# NaN values in the bad rows, except depth, age, & boolean columns
+#cfa.loc[bad_rows, ['Flow Rate', 'ECM', '1', '1.1', '1.2', '1.3', '1.4', '1.5', 
+#                   '1.6', '1.7', '1.8', '1.9', '2', '2.1', '2.2', '2.3', '2.4', 
+#                   '2.5', '2.7', '2.9', '3.2', '3.6', '4', '4.5', '5.1', '5.7', 
+#                   '6.4', '7.2', '8.1', '9', '10', '12', 'CPP', 'Sum 1.1-12']] = np.nan
 
 #print('\tRows removed:', len(bad_rows))
 
 # Update dataset length
 #length = length - len(bad_rows)
 
-# ADD DATA INTERPOLATION, TAIL CORRECTIONS HERE?
+# ADD MANUAL REMOVAL HERE, BEFORE SUMMARY STATISTICS?
 
 # 4) Compute summary statistics before and after phase 2 cleaning, if requested
 
@@ -168,6 +173,8 @@ if choice == 'Y' or choice == 'y':
     summary_statistics(cfa_phase1)
     print('\n--Phase 2 Cleaning Results--')
     summary_statistics(cfa)
+
+# ADD DATA INTERPOLATIO HERE, AFTER SUMMARY STATISTICS?
 
 # 5) Export CFA file to CSV. Report final length.
 print('\n\nFinished CFA outlier & contamination removal')
