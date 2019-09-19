@@ -46,7 +46,7 @@ directory = input('Enter path for SPICEcore data: ')
 os.chdir(directory)
 
 # Load CSV CFA data as floats
-cfa = pd.read_csv('CFA_Unfiltered_Synchronized_8_20_19.csv', dtype = 'float')
+cfa = pd.read_csv('CFA_Unfiltered_Synchronized_9_19_19.csv', dtype = 'float')
 # Delete unnecessary column
 del cfa['Unnamed: 0']
 
@@ -266,8 +266,3 @@ cfa.to_csv('Cleaned_CFA_Phase1_' + str(date.today()) + '.csv')
       
 print('\tData exported to CSV.')
 print('---------------------------------------------------------------------------------')
-
-
-
-
-
