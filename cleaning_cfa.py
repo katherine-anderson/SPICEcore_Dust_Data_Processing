@@ -126,22 +126,23 @@ length = length - len(bad_rows)
 
 # 4) Filter out rows where depth does not increase and rows with no depth value
 
-# Drop all rows where everything but depth has been NaN'd
-not_null = cfa.loc[:, 'Flow Rate'].dropna()
-# Get indices of rows with depth and Abakus data
-not_null = list(not_null.index.values)
-# Get a copy of the CFA depth values, dropping NaN'd depths
-depth_diff = cfa.loc[not_null, 'Depth (m)'].dropna()
-# Subtract each depth value from the depth value before
+# Select data by depth, drop all rows with NaN depth values
+depth_diff = cfa.loc[:, 'Depth (m)'].dropna()
+# Subtract each depth value from the depth value in the row above
 depth_diff = depth_diff.diff(periods = 1)
 # Drop the first row, which becomes NaN
 depth_diff = depth_diff.dropna()
-# Drop all good rows, where the diff is > 0
+# Drop all good rows, where the difference in depth is > 0
 bad_depth = depth_diff.drop(depth_diff[depth_diff > 0].index)
 # Get a list of all of the indices with bad depth measurements
-bad_rows = list(bad_depth.index.values)
-# Change values in the bad rows to NaN
-cfa.loc[bad_rows, :] = np.nan
+bad_depth = list(bad_depth.index.values)
+# Exclude the rows which have already been NaN'd from the depth error counts
+# Select 'bad depth' rows with non-NaN flow rates
+bad_rows = cfa.loc[bad_depth, 'Flow Rate'].dropna()
+# Get a list of all of the indices with only bad depth measurements
+bad_rows = list(bad_rows.index.values)
+# Change ALL values in the bad depth rows to NaN
+cfa.loc[bad_depth, :] = np.nan
 
 print('\tDepth not increasing errors: ', len(bad_rows))
 # Update dataset length
