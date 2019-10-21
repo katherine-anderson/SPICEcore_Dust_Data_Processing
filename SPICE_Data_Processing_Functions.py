@@ -1,6 +1,8 @@
-# Script with function definitions. This way, the commands for each calculation can just be written once.
-#
-# Katie Anderson, 8/21/19
+# --------------------------------------------------------------------------------------
+#                     SPICEcore DUST PROCESSING FUNCTIONS
+
+# Supplementary script with function definitions for functions called in other scripts
+# No need to run this script on its own- the other scripts run it internally
 #
 # List of functions:
 #
@@ -16,8 +18,10 @@
 # 10) select_cfa:                Subset CFA data for given depth or age range
 # 11) summary_statistics:        Print summary statistics for dust concentration & CPP during data cleaning
     
+# Katie Anderson, 10/21/19
+# ---------------------------------------------------------------------------------------
 #%%
-# Function to correct anomalously low Abakus values during melt day 7/19/2019
+# Function to correct anomalously low Abakus values during bad melt day 7/19/2019
 # Inputs: CFA dataframe
 # Output: Corrected CFA dataframe
 
@@ -407,4 +411,4 @@ def summary_statistics(cfa_data):
         print('    StDev:  %.2f' % (np.nanstd(cpp)))
         print('    MAD:    %.2f' % cpp_mad)
         
-    else: print('Input data with particle sum and CPP columns')
+    else: print('Input data with particle sum and CPP columns.')

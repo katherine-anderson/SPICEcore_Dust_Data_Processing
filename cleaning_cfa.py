@@ -1,18 +1,24 @@
 # ------------------------------------------------------------------------------------------------------
-#                                    FINAL SPICE REMOVE ERRORS SCRIPT
-# Removes melting errors in the raw CFA data, interpolates timescale, and adds descriptive columns
+#                     SPICEcore Dust Phase 1 Processing Script: Mechanical Error Removal
+# Removes melting errors in the raw CFA data, interpolates a timescale, and adds descriptive columns
 #
-#    - Loads raw, unfiltered CFA with depth corrections
+#    - Dust processing has 2 phases
+#      1) Mechanical error removal 
+#      2) Removal of outliers & anomalies
+# 
+# Phase 1 Dust Processing
+#    - Loads raw, unfiltered CFA with minor depth corrections
 #    - Loads supporting datafiles
 #    - Tracks the number of measurements NaN'ed in each step
-#    1) NaNs bubbles using liquid conductivity data
+#
+#    1) NaNs data from air bubbles bubbles using liquid conductivity values
 #    2) NaNs liquid conductivity values < 0.6
 #    3) NaNs measurements without positive flow rates
 #    4) NaNs measurements with depth duplicates or decreases
-#    5) NaNs any negative and infinite Abakus values
-#    6) Applies correction to Abakus data from bad melt day (7/19/2016))
-#    7) Creates timescale for CFA data (annual in Holocene, tie points for glacial)
-#    8) Labels all measurements within specified depth ranges of core breaks
+#    5) NaNs any negative and infinite dust values
+#    6) Applies correction to dust data from bad melt day (7/19/2016)
+#    7) Applies timescale to the dust data (annual layers in the Holocene, volcanic tie points for the glacial)
+#    8) Labels all measurements near core breaks
 #    9) Labels all measurements within volcanic events and dust events
 #   10) Calculates particle concentration and coarse particle percentage (CPP)
 #   11) Exports cleaned dataset to CSV
@@ -261,8 +267,8 @@ cfa['Sum 1.1-12'] = conc
 cfa['CPP'] = find_cpp(cfa)
 
 # 10) Export CFA file to CSV. Report final length.
-print('\nFinished CFA error removal')
-print('\tFinal CFA dataset length:', length)
+print('\nFinished Phase 1 dust processing.')
+print('\tFinal dataset length:', length)
 cfa.to_csv('Cleaned_CFA_Phase1_' + str(date.today()) + '.csv')
       
 print('\tData exported to CSV.')
