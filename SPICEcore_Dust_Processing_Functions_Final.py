@@ -6,17 +6,16 @@
 #
 # List of functions:
 #
-#  1) correct_meltday:           Corrects incorrect time units during melt day 7/19/2016
-#  2) label_core_breaks:         Get a list of indices for each CFA row near a core break (by depth)
+#  1) correct_meltday:           Correct time units during melt day 7/19/2016
+#  2) label_core_breaks:         Get a list of indices for each continuous flow analysis (CFA) row near a core break
 #  3) label_volc_events:         Get a list of indices for each row in a volcanic window (by age)
 #  4) label_dust_events:         Get a list of indices for each row in a dust event (by depth)
 #  5) find_cpp:                  Calculate CPP for a CFA dataframe
-#  6) find_humps:                Find hump-shaped PSD anomalies in a CFA dataframe
-#  7) median_absolute_deviation: Calculate MAD for one column of CFA data
+#  6) find_humps:                Find hump-shaped particle size distributions (PSD) anomalies
+#  7) median_absolute_deviation: Calculate median absolute deviation (MAD) for one column of CFA data
 #  8) remove_outliers_MAD:       Remove outliers from the CFA data, using MAD
-#  9) remove_outliers_integrals: Get a list of indices with an integral outlier
-# 10) select_cfa:                Subset CFA data for given depth or age range
-# 11) summary_statistics:        Print summary statistics for dust concentration & CPP during data cleaning
+#  9) select_cfa:                Subset CFA data for given depth or age range
+# 10) summary_statistics:        Print summary statistics for dust concentration & CPP during data cleaning
     
 # Katie Anderson, 10/21/19
 # ---------------------------------------------------------------------------------------
@@ -281,82 +280,6 @@ def remove_outliers_MAD(cfa_data, dust_indices, volc_indices, background_interva
         print('\tNumber of discrete core breaks in removed rows:    ', len(break_outliers))
         
     return remove
-#%%
-# Function to remove outliers using rolling 2-pt integrals (Aaron)
-# Inputs: CFA data, stdev threshold above median, list of dust event rows, list of volcanic rows
-# Output: List of rows to remove from the CFA data
-
-def remove_outliers_integrals(cfa_data, threshold, dust_indices, volc_indices):
-    print('\nRemoving integral outliers')
-    # Calculate thresholds for concentration & CPP outliers
-    
-    # Lists for integral values
-    # y is the integral size
-    y = 2
-    conc_tpz = []
-    cpp_tpz  = []
-    
-    for x in range(0, len(cfa_data), 2):
-        # Concentration integrals
-        # Make sure neither value is NaN. All NaN values in concentration column should be NaN in CPP column
-        if cfa_data.loc[x, 'Sum 1.1-12'] == np.nan or cfa_data.loc[y, 'Sum 1.1-12'] == np.nan: 
-            continue
-        else:
-            conc_tpz.append(trapz(cfa_data['Sum 1.1-12'][x: (x+y)]))
-            # CPP integrals
-            cpp_tpz.append(trapz(cfa_data['CPP'][x: (x+y)]))
-               
-    conc_stdev      = np.nanstd(conc_tpz)
-    conc_median     = np.nanmedian(conc_tpz)
-    # Threshold for error
-    conc_error = (threshold * conc_stdev) + conc_median
-
-    cpp_stdev      = np.nanstd(cpp_tpz)
-    cpp_median     = np.nanmedian(cpp_tpz)
-    # Threshold for error
-    cpp_error  = (threshold * cpp_stdev) + cpp_median
-                        
-    # Concentration outliers
-    y = 2
-    conc_outlier_indices = []
-    cpp_outlier_indices  = []
-    
-    for x in range(0,len(cfa_data), 2):
-    
-        # Concentration outliers
-        if trapz(cfa_data['Sum 1.1-12'].iloc[x:y]) >= conc_error:  # If area increases outside threshold
-            # Only append indices that aren't already in the list. Avoids duplicates.
-            if x not in conc_outlier_indices:
-                conc_outlier_indices.append(x)
-            if y not in conc_outlier_indices:
-                conc_outlier_indices.append(y)
-            
-        # CPP outliers        
-        if trapz(cfa_data['CPP'].iloc[x:y]) >= cpp_error:  # If area increases outside threshold
-            if x not in cpp_outlier_indices:
-                cpp_outlier_indices.append(x)
-            if y not in cpp_outlier_indices:
-                cpp_outlier_indices.append(y)
-        y = y + 2
-
-    # Convert index lists to sets to find the overlap between them
-    conc_outlier_set = set(conc_outlier_indices)
-    cpp_outlier_set  = set(cpp_outlier_indices)
-
-    # Find overlapping indices with both concentration & CPP outliers
-    overlap = conc_outlier_set.intersection(cpp_outlier_set)
-    # Convert to list again and sort
-    overlap = list(overlap)
-    overlap.sort()
-    
-    # Select those rows in the CFA data
-    cfa_data = cfa_data.loc[overlap, :]
-    # Prevent real dust & volc. events from being removed
-    remove = cfa_data.index.difference(dust_indices)
-    remove = cfa_data.index.difference(volc_indices)
-
-    # Return list of outlier rows and the rows to remove
-    return overlap, remove
 #%%
 # Function to subset CFA data for given depth or age range
 #     Inputs: CFA dataframe, starting value, ending value, how ('Depth' or 'Age')
