@@ -7,7 +7,7 @@
 #      2) Removal of outliers & anomalies
 # 
 # Phase 1 Dust Processing
-#    - Loads raw, unfiltered CFA with minor depth corrections
+#    - Loads raw, unfiltered continuous flow analysis (CFA) data with minor depth corrections
 #    - Loads supporting datafiles
 #    - Tracks the number of measurements NaN'ed in each step
 #
@@ -25,7 +25,6 @@
 #
 # Katie Anderson and Aaron Chesler, 8/21/19
 # ------------------------------------------------------------------------------------------------------
-
 #%%
 # ------------------------------------------------------------------------------------------------------
 #                                           1: FILE PREPARATION
@@ -41,14 +40,14 @@ import numpy  as np
 from datetime import date
 
 # Ask user for directory where scripts are located
-directory = input('Enter path for SPICEcore scripts: ')
+directory = input('Enter path for SPICEcore dust scripts: ')
 os.chdir(directory)
 
 # Run script with function definitions
 exec(open('SPICE_Data_Processing_Functions.py').read())
 
 # Ask user for directory where data are located
-directory = input('Enter path for SPICEcore data: ')
+directory = input('Enter path for SPICEcore dust data: ')
 os.chdir(directory)
 
 # Load CSV CFA data as floats

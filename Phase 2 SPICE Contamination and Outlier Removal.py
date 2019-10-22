@@ -10,7 +10,7 @@
 #      - Select 'N' if you ran the Phase 1 script already and have a CLEANED_CFA_Phase1_ dataset
 #
 # Phase 2 Dust Processing
-#    - Cleans anomalies and outliers from the CFA data after Phase 1 processing
+#    - Cleans anomalies and outliers from the continuous flow analysis (CFA) data after Phase 1 processing
 #      - Preserves data during known dust and volcanic events
 #      - Saves 'bad' data into another file, labelled by error type
 #      - NaNs 'bad' data in the CFA file and prints error counts
@@ -32,48 +32,47 @@ print('                 SPICEcore DUST DATA PROCESSING')
 print('...................................................................')
 # Import modules and packages
 import numpy  as np
-from   numpy import trapz
 import pandas as pd
 import os
 from   datetime import date
 
-
-
-# Ask user whether to run phase 1 cleaning (error removal) from this script
-choice = input('Run SPICEcore Phase 1 dust processing script? Enter Y or N: ')
-if choice == 'y' or choice == 'Y':
+# Ask user whether to run phase 1 processing (melter error removal)
+choice = input('Select from the following options: \n1) All data processing (Phase 1 & Phase 2)\n2) Phase 2 processing only\n\nChoice: ')
+if choice == '1':
     
     # Run Phase 1 processing script
     exec(open('cleaning_cfa.py').read())
     
-    # Print header for next part
-    print('\n\n...................................................................')
-    print('  SPICEcore Dust Data Phase 2 Cleaning: Outliers and Contamination')
-    print('...................................................................')
 # Ask user for directory where data are located
-else: 
-    # Print header
-    print('\n\n...................................................................')
-    print('  SPICEcore Dust Data Phase 2 Cleaning: Outliers and Contamination')
-    print('...................................................................')
+elif choice == '2': 
     
     # Ask user for directory where scripts are located
-    directory = input('Enter path for SPICEcore scripts: ')
+    directory = input('Enter path for SPICEcore dust scripts: ')
     os.chdir(directory)
     
     # Run function definitions script
     exec(open('SPICE_Data_Processing_Functions.py').read())
     
     # Get directory for data files
-    directory = input('Enter path for SPICEcore data: ')
+    directory = input('Enter path for SPICEcore dust data: ')
     os.chdir(directory)
+else:
+    
+    print('Invalid choice.')
+    # Stop running the program
+    exit
+    
+# Print header for Phase 2 data processing
+print('\n\n...................................................................')
+print('  SPICEcore Dust Data Phase 2 Cleaning: Outliers and Contamination')
+print('...................................................................')
 
-# Load complete CFA file after mechanical error removal
+# Load complete CFA file after Phase 2 processing
 # Ask user for CFA file to use
-file = input('Enter name of the SPICEcore dust file after Phase 1 processing as .csv: ')
+file = input('Enter name of the SPICEcore dust file after Phase 1 processing with .csv extension: ')
 cfa_phase1 = pd.read_csv(file, header = 0)
 del cfa_phase1['Unnamed: 0']
-# Make separate copies of the CFA data before and after phase 2 cleaning, for comparison
+# Make separate copies of the CFA data before and after phase 2 cleaning to compare summary statistics
 cfa = cfa_phase1.copy()
 
 # Get the row indices of all measurements within dust events
@@ -187,10 +186,10 @@ length = length - len(bad_rows)
 choice = input('Print summary statistics? Enter Y or N: ')
 if choice == 'Y' or choice == 'y':
 
-    print('\n--Phase 1 Cleaning Results--')
+    print('\n--Results After Phase 1 Processing--')
     # Input the before & after CFA data into the summary statistics function
     summary_statistics(cfa_phase1)
-    print('\n--Phase 2 Cleaning Results--')
+    print('\n--Results After Phase 2 Processing--')
     summary_statistics(cfa)
     
 #
@@ -205,8 +204,3 @@ cfa.to_csv('Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
 bad_cfa.to_csv('Bad_CFA_Phase2_' + str(date.today()) + '.csv')
 print('\n\tData exported to CSV. Bad data saved in separate file.')
 print('-----------------------------------------------------------------------')
-
-
-
-
-
