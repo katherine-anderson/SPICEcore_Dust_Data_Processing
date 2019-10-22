@@ -21,7 +21,7 @@ exec(open('SPICE_Data_Processing_Functions.py').read())
 os.chdir('C:\\Users\\katie\\OneDrive\\Documents\\SPICE\\Data')
 #%%
 # Load cleaned CFA data, delete extra columns
-cfa = pd.read_csv('Cleaned_CFA_Phase2_2019-09-19.csv')
+cfa = pd.read_csv('Cleaned_CFA_Phase2_2019-10-22.csv')
 del cfa['Unnamed: 0']
 #%%
 # Function to create interpolation setup
@@ -118,7 +118,7 @@ def interpolate_cfa(cfa_data, interp_df):
         # Make sure it's an integer
         order_choice = int(order_choice)
     else:
-        print('Incorrect choice.')
+        print('Invalid choice.')
         return
     
     # If 'linear'
