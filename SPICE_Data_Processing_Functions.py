@@ -6,7 +6,7 @@
 #
 # List of functions:
 #
-#  1) correct_meltday:           Corrects low Abakus values during melt day 7/19/2016
+#  1) correct_meltday:           Corrects incorrect time units during melt day 7/19/2016
 #  2) label_core_breaks:         Get a list of indices for each CFA row near a core break (by depth)
 #  3) label_volc_events:         Get a list of indices for each row in a volcanic window (by age)
 #  4) label_dust_events:         Get a list of indices for each row in a dust event (by depth)
@@ -21,7 +21,7 @@
 # Katie Anderson, 10/21/19
 # ---------------------------------------------------------------------------------------
 #%%
-# Function to correct anomalously low Abakus values during bad melt day 7/19/2019
+# Function to correct time units during melt day 7/19/2019
 # Inputs: CFA dataframe
 # Output: Corrected CFA dataframe
 
