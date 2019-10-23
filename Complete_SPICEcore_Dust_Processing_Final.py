@@ -196,6 +196,9 @@ interp_conc, interp_cpp = interpolate_final_cfa(cfa)
 cfa['Sum 1.1-12'] = interp_conc
 cfa['CPP'] = interp_cpp
 
+# Recalculate dataset length after interpolation
+length = cfa['Sum 1.1-12'].count()
+
 #%%
 # 4) Compute summary statistics before and after Phase 2 processing, if requested
 choice = input('Print summary statistics? Enter Y or N: ')
@@ -209,7 +212,7 @@ if choice == 'Y' or choice == 'y':
         
 # 5) Export CFA file to CSV. Report final length.
 print('\n\nFinished SPICEcore dust processing.')
-print('\n\tFinal dataset length:', cfa['Sum 1.1-12'].count())
+print('\n\tFinal dataset length:', length)
 
 cfa.to_csv('Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
 bad_cfa.to_csv('Bad_CFA_Phase2_' + str(date.today()) + '.csv')
