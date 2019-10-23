@@ -4,7 +4,6 @@ Created on Sun Sep  1 14:21:12 2019
 
 @author: katie
 """
-#cfa.loc[288710:288730, 'AgeBP':'CPP']
 #%%
 # Import modules
 import numpy as np
@@ -21,7 +20,7 @@ exec(open('SPICE_Data_Processing_Functions.py').read())
 os.chdir('C:\\Users\\katie\\OneDrive\\Documents\\SPICE\\Data')
 #%%
 # Load cleaned CFA data, delete extra columns
-cfa = pd.read_csv('Cleaned_CFA_Phase2_2019-10-22.csv')
+cfa = pd.read_csv('Cleaned_CFA_Phase2_2019-10-23.csv')
 del cfa['Unnamed: 0']
 #%%
 # Function to create interpolation setup
@@ -57,14 +56,14 @@ def setup_interp(cfa_data):
     # Subset the data for different time intervals (arbitrary)
     # Set different limits on the # of years to interpolate for each interval
     holocene = interp[interp['Starting Age'] <= 12000].copy()
-    holocene['Years to Interp'] = 0.5
+    holocene['Years to Interp'] = 0.25
     
     lgm = interp[interp['Starting Age'] > 12000].copy()
     lgm = lgm[lgm['Starting Age'] <= 22000]
-    lgm['Years to Interp'] = 1
+    lgm['Years to Interp'] = .5
     
     glacial = interp[interp['Starting Age'] > 22000].copy()
-    glacial['Years to Interp'] = 2
+    glacial['Years to Interp'] = 1
     
     # Merge all 3 dataframes, now with the 'years to interp' data
     dfs = [holocene, lgm, glacial]
@@ -168,7 +167,7 @@ linear_conc, linear_cpp = interpolate_cfa(cfa, interp)
 linear_conc = linear_conc[linear_conc >= 0]
 linear_conc = linear_conc[linear_conc <  300]
 linear_cpp  = linear_cpp[linear_cpp >= 0]
-linear_cpp  = linear_cpp[linear_cpp <  70]
+linear_cpp  = linear_cpp[linear_cpp <  25]
 # Copy interpolated data into new dataframe
 cfa_linear = cfa.copy()
 cfa_linear['Sum 1.1-12'] = linear_conc
@@ -182,7 +181,7 @@ poly2_conc, poly2_cpp = interpolate_cfa(cfa, interp)
 poly2_conc = poly2_conc[poly2_conc >= 0]
 poly2_conc = poly2_conc[poly2_conc <  300]
 poly2_cpp  = poly2_cpp[poly2_cpp >= 0]
-poly2_cpp  = poly2_cpp[poly2_cpp <  70]
+poly2_cpp  = poly2_cpp[poly2_cpp <  25]
 # Copy interpolated data into new dataframe
 cfa_poly2 = cfa.copy()
 cfa_poly2['Sum 1.1-12'] = poly2_conc
@@ -196,7 +195,7 @@ poly3_conc, poly3_cpp = interpolate_cfa(cfa, interp)
 poly3_conc = poly3_conc[poly3_conc >= 0]
 poly3_conc = poly3_conc[poly3_conc <  300]
 poly3_cpp  = poly3_cpp[poly3_cpp >= 0]
-poly3_cpp  = poly3_cpp[poly3_cpp <  70]
+poly3_cpp  = poly3_cpp[poly3_cpp <  25]
 # Copy interpolated data into new dataframe
 cfa_poly3 = cfa.copy()
 cfa_poly3['Sum 1.1-12'] = poly3_conc
@@ -228,45 +227,18 @@ ax2.set_ylabel('CPP')
 ax2.set_xlabel('Age BP')
 
 #%%
-# Interpolation setup 2
-
-#poly3_conc, poly3_cpp = interpolate_cfa(cfa, interp)
-#cfa_poly3 = cfa.copy()
-#cfa_poly3['Sum 1.1-12'] = poly3_conc
-#cfa_poly3['CPP'] = poly3_cpp
-## Delete extra columns
-#cfa_poly3 = cfa_poly3.loc[:, 'AgeBP':'CPP'].copy()
+## Fixing big gaps in depth between measurements
+## To keep Python from connecting large gaps with a single line
 #
-#spline2_conc, spline2_cpp = interpolate_cfa(cfa, interp)
-#cfa_spline2 = cfa.copy()
-#cfa_spline2['Sum 1.1-12'] = spline2_conc
-#cfa_spline2['CPP'] = spline2_cpp
-## Delete extra columns
-#cfa_spline2 = cfa_spline2.loc[:, 'AgeBP':'CPP'].copy()
-
-#%%
-# Comparing 2nd- and 3rd- order poly and spline interpolations
-#fig = plt.figure()
-#ax1 = fig.add_subplot(211)
-#ax2 = fig.add_subplot(212, sharex=ax1)
-#fig.subplots_adjust(hspace = 0.05)
-#
-#ax1.plot(cfa_poly['AgeBP'], cfa_poly['Sum 1.1-12'], color = 'blue')
-#ax1.plot(cfa_poly3['AgeBP'], cfa_poly3['Sum 1.1-12'], color = 'orange')
-#ax1.plot(cfa_spline2['AgeBP'], cfa_spline2['Sum 1.1-12'], color = 'red')
-#ax1.plot(cfa_spline['AgeBP'], cfa_spline['Sum 1.1-12'], color = 'green')
-#ax1.plot(cfa['AgeBP'], cfa['Sum 1.1-12'], color = 'black')
-#ax1.set_ylabel('Conc')
-#mylabels = ['2nd-Order Poly', '3rd-Order Poly', '2nd-Order Spline', '3rd-Order Spline', 'None']
-#ax1.legend(mylabels)
-#ax1.axes.get_xaxis().set_visible(False)  
-#
-#ax2.plot(cfa_poly['AgeBP'], cfa_poly['CPP'], color = 'blue')
-#ax2.plot(cfa_poly3['AgeBP'], cfa_poly3['CPP'], color = 'orange')
-#ax2.plot(cfa_spline2['AgeBP'], cfa_spline2['CPP'], color = 'red')
-#ax2.plot(cfa_spline['AgeBP'], cfa_spline['CPP'], color = 'green')
-#ax2.plot(cfa['AgeBP'], cfa['CPP'], color = 'black')
-#ax2.set_ylim(0, 80)
-#ax2.set_ylabel('CPP')
-#ax2.set_xlabel('Age BP')
-#%%
+## Make a copy of the depth and flow data. Don't drop the NaN'd rows.
+#depth_diff = cfa.loc[:, 'Depth (m)':'Flow Rate'].copy()
+## Subtract each depth value from the one before
+#depth_diff = depth_diff.diff(periods = 1)
+## Get rows where difference in depth is >= 6 cm - encoder precision?
+#bad_diff = depth_diff[(depth_diff['Depth (m)'] >= 0.03)]
+## Remove incides of rows with NaN'd flow rate & Abakus data from this list
+#bad_rows = bad_diff.loc[:, 'Flow Rate'].dropna()
+## Get the indices of these rows
+#bad_rows = list(bad_rows.index.values)
+## Change the non-boolean values in these rows to NaN
+#cfa.loc[bad_rows, 'Depth (m)':'AgeBP'] = np.nan
