@@ -44,7 +44,7 @@ directory = input('Enter path for SPICEcore dust scripts: ')
 os.chdir(directory)
 
 # Run script with function definitions
-exec(open('SPICEcore Dust_Processing_Functions_Final.py').read())
+exec(open('SPICEcore_Dust_Processing_Functions_Final.py').read())
 
 # Ask user for directory where data are located
 directory = input('Enter path for SPICEcore dust data: ')
