@@ -44,7 +44,7 @@ directory = input('Enter path for SPICEcore dust scripts: ')
 os.chdir(directory)
 
 # Run script with function definitions
-exec(open('SPICE_Data_Processing_Functions.py').read())
+exec(open('SPICEcore Dust_Processing_Functions_Final.py').read())
 
 # Ask user for directory where data are located
 directory = input('Enter path for SPICEcore dust data: ')
@@ -270,5 +270,5 @@ print('\nFinished Phase 1 dust processing.')
 print('\tFinal dataset length:', length)
 cfa.to_csv('Cleaned_CFA_Phase1_' + str(date.today()) + '.csv')
       
-print('\tData exported to CSV.')
+print('\tData exported to CSV [Cleaned_CFA_Phase1_...].')
 print('---------------------------------------------------------------------------------')
