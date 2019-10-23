@@ -40,8 +40,12 @@ from   datetime import date
 choice = input('Select from the following options: \n1) All data processing (Phase 1 & Phase 2)\n2) Phase 2 processing only\n\nChoice: ')
 if choice == '1':
     
+    # Ask user for directory where scripts are located
+    directory = input('Enter path for SPICEcore dust scripts: ')
+    os.chdir(directory)
+    
     # Run Phase 1 processing script
-    exec(open('cleaning_cfa.py').read())
+    exec(open('SPICEcore_Dust_Phase1_Processing_Final.py').read())
     
 # Ask user for directory where data are located
 elif choice == '2': 
@@ -51,7 +55,7 @@ elif choice == '2':
     os.chdir(directory)
     
     # Run function definitions script
-    exec(open('SPICE_Data_Processing_Functions.py').read())
+    exec(open('SPICEcore_Dust_Processing_Functions_Final.py').read())
     
     # Get directory for data files
     directory = input('Enter path for SPICEcore dust data: ')
@@ -181,8 +185,19 @@ print('\tRows removed: ', len(bad_rows))
 # Update dataset length
 length = length - len(bad_rows)
 
-# 5) Compute summary statistics before and after phase 2 cleaning, if requested
+#%%
+# 3) Interpolate over gaps in the CFA concentration and CPP data
 
+print('\nInterpolating over gaps in concentration and CPP data.')
+
+interp_conc, interp_cpp = interpolate_final_cfa(cfa)
+
+# Copy checked, interpolated data into final CFA dataframe
+cfa['Sum 1.1-12'] = interp_conc
+cfa['CPP'] = interp_cpp
+
+#%%
+# 4) Compute summary statistics before and after Phase 2 processing, if requested
 choice = input('Print summary statistics? Enter Y or N: ')
 if choice == 'Y' or choice == 'y':
 
@@ -191,16 +206,12 @@ if choice == 'Y' or choice == 'y':
     summary_statistics(cfa_phase1)
     print('\n--Results After Phase 2 Processing--')
     summary_statistics(cfa)
-    
-#
-# ADD DATA INTERPOLATION HERE, AFTER SUMMARY STATISTICS?
-#
-    
-# 6) Export CFA file to CSV. Report final length.
+        
+# 5) Export CFA file to CSV. Report final length.
 print('\n\nFinished SPICEcore dust processing.')
-print('\n\tFinal dataset length:', length)
+print('\n\tFinal dataset length:', cfa['Sum 1.1-12'].count())
 
 cfa.to_csv('Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
 bad_cfa.to_csv('Bad_CFA_Phase2_' + str(date.today()) + '.csv')
-print('\n\tData exported to CSV. Bad data saved in separate file.')
+print('\n\tData exported to CSV [Cleaned_CFA_Phase2_...].\n\tBad data saved in separate file [Bad_CFA_Phase2_...].')
 print('-----------------------------------------------------------------------')
