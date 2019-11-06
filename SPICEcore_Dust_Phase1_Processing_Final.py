@@ -257,8 +257,8 @@ valid_depth = flow_isnull[flow_isnull == False]
 valid_depth = list(valid_depth.index.values)
 # Select the non-NaN CFA rows for concentration (ignoring bin 1)
 conc = cfa.loc[valid_depth, '1.1':'12'].copy()
-# Get particle sums for these rows. Use skipna = True so NaN cells count as 0.
-conc = conc.sum(axis = 1, skipna = True)
+# Get particle sums for these rows. Use skipna = True so NaN cells count as 0. Need at least 1 value to sum, otherwise NaN
+conc = conc.sum(axis = 1, skipna = True, min_count = 1)
 # Add concentration column to CFA dataframe
 cfa['Sum 1.1-12'] = conc
 
