@@ -313,7 +313,7 @@ def setup_interp(cfa_data):
     start_age = []
     end_age = []
     # Get youngest age value to start
-    years = cfa_data.loc[0, 'AgeBP']
+    years = cfa_data['AgeBP'].loc[cfa_data['AgeBP'].first_valid_index()]
     
     # Increment ages until the max age of the data
     # Column 33 is AgeBP
@@ -401,7 +401,8 @@ def interpolate_final_cfa(cfa_data):
         final_cpp  = final_cpp.append(interp_cpp)
     
     # Get Boolean values for whether or not concentration is NaN
-    conc_isnull = cfa_data['Sum 1.1-12'].isnull()
+    # Skip rows 0-18, which are completely NaN and aren't in interpolation lists
+    conc_isnull = cfa_data.loc[19:, 'Sum 1.1-12'].isnull()
     # Select rows with NaN concentration 
     null_conc = conc_isnull[conc_isnull == True]
     # Get the indices of these rows
@@ -419,7 +420,8 @@ def interpolate_final_cfa(cfa_data):
     
     # Do the same for CPP
     # Get Boolean values for whether or not CPP is NaN
-    cpp_isnull = cfa_data['CPP'].isnull()
+    # Skip rows 0-18
+    cpp_isnull = cfa_data.loc[19:, 'CPP'].isnull()
     # Select rows with NaN CPP
     null_cpp = cpp_isnull[cpp_isnull == True]
     # Get the indices of these rows
