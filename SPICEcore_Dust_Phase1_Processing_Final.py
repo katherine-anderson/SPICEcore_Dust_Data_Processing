@@ -51,7 +51,7 @@ directory = input('Enter path for SPICEcore dust data: ')
 os.chdir(directory)
 
 # Load CSV CFA data as floats
-cfa = pd.read_csv('CFA_Unfiltered_Synchronized_9_19_19.csv', dtype = 'float')
+cfa = pd.read_csv('CFA_Unfiltered_Synchronized_1_2_20.csv', dtype = 'float')
 # Delete unnecessary column
 del cfa['Unnamed: 0']
 
@@ -107,7 +107,7 @@ bad_ecm = bad_ecm.where(bad_ecm < 0.6)
 bad_rows = bad_ecm[bad_ecm.notnull()]
 bad_rows = list(bad_rows.index.values)
 # Change values in the bad rows to NaN
-cfa.loc[bad_rows, 'Flow Rate':'12'] = np.nan
+cfa.loc[bad_rows, :] = np.nan
 
 print('\tLiquid conductivity < 0.6:   ', len(bad_rows))
 # Update dataset length
@@ -123,7 +123,7 @@ bad_flow = bad_flow.where(bad_flow <= 0)
 bad_rows = bad_flow[bad_flow.notnull()]
 bad_rows = list(bad_rows.index.values)
 # Change all values in the bad rows to NaN
-cfa.loc[bad_rows, 'Flow Rate':'12'] = np.nan
+cfa.loc[bad_rows, :] = np.nan
 
 print('\tNo/negative flow rate errors:', len(bad_rows))
 # Update dataset length
