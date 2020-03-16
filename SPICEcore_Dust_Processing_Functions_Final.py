@@ -15,11 +15,9 @@
 #  7) median_absolute_deviation: Calculate median absolute deviation (MAD) for one column of CFA data
 #  8) remove_outliers_MAD:       Remove outliers from the CFA data, using MAD
 #  9) select_cfa:                Subset CFA data for given depth or age range
-# 10) setup_interpolation        Create dataframe with time & row intervals over which to interpolate gaps
-# 11) interpolate_cfa            Interpolate over concentration & CPP gaps, checking that interpolated values aren't extreme
-# 12) summary_statistics:        Print summary statistics for dust concentration & CPP during data cleaning
+# 10) summary_statistics:        Print summary statistics for dust concentration & CPP during data cleaning
     
-# Katie Anderson, 10/21/19
+# Katie Anderson, 3/16/19
 # ---------------------------------------------------------------------------------------
 #%%
 # Function to correct time units during melt day 7/19/2019
@@ -300,145 +298,7 @@ def select_cfa(cfa_data, lower, upper, variable):
     else:
         print('Invalid entry')
         return cfa_data
-#%%
-# Function to create interpolation interval set-up
-# Inputs: Cleaned CFA data
-# Output: Dataframe with time intervals with the # of years and rows to interpolate over
-        
-def setup_interp(cfa_data):
-    # Set up interpolation dataframe
-    interp = pd.DataFrame()
-    
-    # Need to get lists of incrementing age ranges
-    start_age = []
-    end_age = []
-    # Get youngest age value to start
-    years = cfa_data['AgeBP'].loc[cfa_data['AgeBP'].first_valid_index()]
-    
-    # Increment ages until the max age of the data
-    # Column 33 is AgeBP
-    while years <= cfa_data.iloc[-1, 33]:
-        # Add the start age to the list
-        start_age.append(years)
-        # Increment by 500 years
-        years = years + 500
-        # Add the end age to the list
-        end_age.append(years)
-    
-    # Add lists to new interp dataframe columns
-    interp['Starting Age'] = start_age
-    interp['Ending Age']   = end_age
-    # Create empty column to indicate the # of years to interpolate over in that interval
-    interp['Years to Interp'] = np.nan
-    
-    # Subset the data for different time intervals (arbitrary)
-    # Set different limits on the # of years to interpolate for each interval
-    holocene = interp[interp['Starting Age'] <= 12000].copy()
-    holocene['Years to Interp'] = 0.25
-    
-    lgm = interp[interp['Starting Age'] > 12000].copy()
-    lgm = lgm[lgm['Starting Age'] <= 22000]
-    lgm['Years to Interp'] = .5
-    
-    glacial = interp[interp['Starting Age'] > 22000].copy()
-    glacial['Years to Interp'] = 1
-    
-    # Merge all 3 dataframes, now with the 'years to interp' data
-    dfs = [holocene, lgm, glacial]
-    interp = pd.concat(dfs)
 
-    # Create empty list to store the # of rows to interpolate over for each interval
-    interp_rows = []
-    
-    # Loop through each time interval in the interpolation dataframe
-    for start, end, years in zip(interp['Starting Age'], interp['Ending Age'], interp['Years to Interp']):
-        # Subset the CFA data for this age interval
-        temp = select_cfa(cfa_data, start, end, 'AgeBP')
-        # Only keep the age values
-        temp = temp.loc[:, 'AgeBP'].copy()
-        # Get the difference in age between each row
-        age_diff = temp.diff()
-        # Get the mean age difference between rows
-        mean_diff = np.nanmean(age_diff)
-        # Find how many rows are needed to reach the specified number of years
-        number_rows = years / mean_diff
-        # Round to nearest integer. This is the number of rows to interpolate over for this interval
-        number_rows = np.round(number_rows, decimals = 0)
-        # Change to integer
-        number_rows = number_rows.astype(np.int64)
-        # Append the number of rows
-        interp_rows.append(number_rows)
-    
-    # Add list to new column in the interpolation dataframe
-    interp['Rows to Interp'] = interp_rows    
-
-    return interp    
-#%%
-# Function to complete 2nd-order polynomial interpolation over cleaned CFA data
-# Inputs: Cleaned CFA data
-# Outputs: Two series with interpolated concentration & CPP data
-def interpolate_final_cfa(cfa_data):
-    
-    # Call function to generate interpolation setup
-    interp_df = setup_interp(cfa_data)
-    
-    # Create empty series for final concentration & CPP columns
-    final_conc = pd.Series(name = 'Sum 1.1-12')
-    final_cpp  = pd.Series(name = 'CPP')
-    
-    # Loop through each interpolation interval
-    for start, end, rows in zip(interp_df['Starting Age'], interp_df['Ending Age'], interp_df['Rows to Interp']):
-        # Subset the CFA data for this age interval
-        temp = select_cfa(cfa_data, start, end, 'AgeBP')
-        # Interpolate concentration up to x number of rows
-        # Limit_direction = backward, so it interpolates forward through time
-        # Use the user-defined order for polynomial & spline interpolation
-        interp_conc = temp['Sum 1.1-12'].interpolate(method = 'polynomial', order = 2, limit = rows, limit_direction = 'backward')
-        # Interpolate CPP
-        interp_cpp = temp['CPP'].interpolate(method = 'polynomial', order = 2, limit = rows, limit_direction = 'backward')    
-        # Append interpolated values to final lists before moving to next interval
-        final_conc = final_conc.append(interp_conc)
-        final_cpp  = final_cpp.append(interp_cpp)
-    
-    # Get Boolean values for whether or not concentration is NaN
-    # Skip rows 0-18, which are completely NaN and aren't in interpolation lists
-    conc_isnull = cfa_data.loc[19:, 'Sum 1.1-12'].isnull()
-    # Select rows with NaN concentration 
-    null_conc = conc_isnull[conc_isnull == True]
-    # Get the indices of these rows
-    null_conc = list(null_conc.index.values)
-    
-    # Select only these rows in the interpolated data to check
-    interp_conc_checked = final_conc.loc[null_conc]
-    # Prevent these data from exceeding set range
-    # Replace all values which return false to the condition
-    interp_conc_checked = interp_conc_checked.where(interp_conc_checked >=  0, np.nan)
-    interp_conc_checked = interp_conc_checked.where(interp_conc_checked < 300, np.nan)
-    
-    # Replace all values in the original NaN concentration rows with the checked, interpolated values
-    final_conc.loc[null_conc] = interp_conc_checked
-    
-    # Do the same for CPP
-    # Get Boolean values for whether or not CPP is NaN
-    # Skip rows 0-18
-    cpp_isnull = cfa_data.loc[19:, 'CPP'].isnull()
-    # Select rows with NaN CPP
-    null_cpp = cpp_isnull[cpp_isnull == True]
-    # Get the indices of these rows
-    null_cpp = list(null_cpp.index.values)
-    
-    # Select only these rows in the interpolated data
-    interp_cpp_checked = final_cpp.loc[null_cpp]
-    # Prevent these data from exceeding set range
-    # Replace all values which return false to the condition
-    interp_cpp_checked = interp_cpp_checked.where(interp_cpp_checked >= 0, np.nan)
-    interp_cpp_checked = interp_cpp_checked.where(interp_cpp_checked < 25, np.nan)
-    
-    # Replace all values in the original NaN CPP rows with the checked, interpolated values
-    final_cpp.loc[null_cpp] = interp_cpp_checked
-    
-    # Return series of interpolated concentration & CPP data
-    return final_conc, final_cpp
 #%%  
 # Function to print summary statistics for dust concentration & CPP during data cleaning
 #     Inputs: CFA dataframe with particle sum and CPP columns

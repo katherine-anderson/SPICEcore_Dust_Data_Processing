@@ -21,7 +21,7 @@
 #    - Prints summary statistics
 #    - Saves cleaned and 'bad' data to two separate files
 #
-# Aaron Chesler and Katie Anderson, 10/21/19
+# Aaron Chesler and Katie Anderson, 3/16/19
 # ---------------------------------------------------------------------------------------
 #%%
 # ---------------------------------------------------------------------------------------
@@ -184,20 +184,6 @@ cfa.loc[bad_rows, ['Flow Rate', 'ECM', '1', '1.1', '1.2', '1.3', '1.4', '1.5',
 print('\tRows removed: ', len(bad_rows))
 # Update dataset length
 length = length - len(bad_rows)
-
-#%%
-# 3) Interpolate over gaps in the CFA concentration and CPP data
-
-print('\nInterpolating over gaps in concentration and CPP data.')
-
-interp_conc, interp_cpp = interpolate_final_cfa(cfa)
-
-# Copy checked, interpolated data into final CFA dataframe
-cfa['Sum 1.1-12'] = interp_conc
-cfa['CPP'] = interp_cpp
-
-# Recalculate dataset length after interpolation
-length = cfa['Sum 1.1-12'].count()
 
 #%%
 # 4) Compute summary statistics before and after Phase 2 processing, if requested
