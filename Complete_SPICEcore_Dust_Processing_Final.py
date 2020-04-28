@@ -15,13 +15,12 @@
 #      - Saves 'bad' data into another file, labelled by error type
 #      - NaNs 'bad' data in the CFA file and prints error counts
 #      - Error types:
-#        1) Particle size distribution (PSD) 'hump' anomaly
-#        2) Median absolute deviation (MAD) outliers
-#        3) Manually-identified issues which remain
+#        1) Median absolute deviation (MAD) outliers
+#        2) Manually-identified issues which remain
 #    - Prints summary statistics
 #    - Saves cleaned and 'bad' data to two separate files
 #
-# Aaron Chesler and Katie Anderson, 3/16/19
+# Aaron Chesler and Katie Anderson, 4/28/20
 # ---------------------------------------------------------------------------------------
 #%%
 # ---------------------------------------------------------------------------------------
@@ -98,36 +97,10 @@ manual = pd.read_excel('CFA_Manual_Cleaning.xlsx')
 print('\n\n-----------------------------------------------------------------------')
 # Get length of dataset from phase 1 cleaning. Use this column to get an accurate count.
 length = cfa['Sum 1.1-12'].count()
-print('\n\nRemoving outliers and contamination signals.')
+print('\n\nRemoving outliers.')
 print('CFA dataset length after error removal:', length)
 
-# 1) Identify and remove hump-shaped PSD anomalies
-
-# Find humps for all CFA depths
-# Inputs: CFA data, minimum depth, maximum depth. Currently using the full core.
-humps = find_humps(cfa, 0, 1752)
-
-# Remove all rows in real dust events from the hump list
-bad_rows = humps.index.difference(dust_rows)
-# Subsequently remove all rows in real volcanic events from the hump list
-bad_rows = bad_rows.difference(volc_rows)
-
-# Save all bad data into a separate dataframe
-bad_cfa = cfa.loc[bad_rows, :].copy()
-bad_cfa['Error Type'] = 'PSD Hump Anomaly'
-
-# NaN values in the bad rows, except depth, age, & boolean columns
-cfa.loc[bad_rows, ['Flow Rate', 'ECM', '1', '1.1', '1.2', '1.3', '1.4', '1.5', 
-                   '1.6', '1.7', '1.8', '1.9', '2', '2.1', '2.2', '2.3', '2.4', 
-                   '2.5', '2.7', '2.9', '3.2', '3.6', '4', '4.5', '5.1', '5.7', 
-                   '6.4', '7.2', '8.1', '9', '10', '12', 'CPP', 'Sum 1.1-12']] = np.nan
-
-# Print number of measurements removed
-print('\tRows removed: ', len(bad_rows))
-# Update dataset length
-length = length - len(bad_rows)
-
-# 2) Identify and remove particle concentration & CPP outliers, using MAD
+# 1) Identify and remove particle concentration & CPP outliers, using MAD
 
 # Set # of measurements to use for background medians
 window = 500
@@ -138,10 +111,14 @@ threshold = 2
 # Inputs: CFA data, dust event indices, volcanic event indices, background window size, and MAD threshold
 bad_rows = remove_outliers_MAD(cfa, dust_rows, volc_rows, window, threshold)
 
+# Create empty dataframe to hold bad data
+bad_cfa = pd.DataFrame()
+# bad_cfa['Error Type'] = 'MAD Outlier'
+
 # Add bad data to the bad CFA dataframe
 bad_cfa = bad_cfa.append(cfa.loc[bad_rows, :], sort = False)
 # Label error type
-bad_cfa['Error Type'].fillna('MAD Outlier', inplace = True)
+bad_cfa['Error Type'] = 'MAD Outlier'
 
 # NaN values in the bad rows, except depth, age, & boolean columns
 cfa.loc[bad_rows, ['Flow Rate', 'ECM', '1', '1.1', '1.2', '1.3', '1.4', '1.5', 
@@ -155,7 +132,7 @@ print('\tRows removed: ', len(bad_rows))
 length = length - len(bad_rows)
 
 # 3) Remove remaining manually-identified issues
-print('\nManually removing remaining issues.')
+print('\n Removing manually-identified issues.')
 # Create empty dataframe to collect intervals to remove
 remove_manually = pd.DataFrame()
 

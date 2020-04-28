@@ -11,13 +11,12 @@
 #  3) label_volc_events:         Get a list of indices for each row in a volcanic window (by age)
 #  4) label_dust_events:         Get a list of indices for each row in a dust event (by depth)
 #  5) find_cpp:                  Calculate CPP for a CFA dataframe
-#  6) find_humps:                Find hump-shaped particle size distributions (PSD) anomalies
-#  7) median_absolute_deviation: Calculate median absolute deviation (MAD) for one column of CFA data
-#  8) remove_outliers_MAD:       Remove outliers from the CFA data, using MAD
-#  9) select_cfa:                Subset CFA data for given depth or age range
-# 10) summary_statistics:        Print summary statistics for dust concentration & CPP during data cleaning
+#  6) median_absolute_deviation: Calculate median absolute deviation (MAD) for one column of CFA data
+#  7) remove_outliers_MAD:       Remove outliers from the CFA data, using MAD
+#  8) select_cfa:                Subset CFA data for given depth or age range
+#  9) summary_statistics:        Print summary statistics for dust concentration & CPP during data cleaning
     
-# Katie Anderson, 3/16/19
+# Katie Anderson, 4/28/20
 # ---------------------------------------------------------------------------------------
 #%%
 # Function to correct time units during melt day 7/19/2019
@@ -157,62 +156,6 @@ def find_cpp(cfa_data):
     # Return a series of the percent of particles that are coarse per row
     return(cpp_df['Sum_Coarse'] / cpp_df['Sum_All'] * 100)
 
-#%%
-# Identifies CFA measurements with hump PSD anomalies
-# Inputs: CFA data and the min/max depths in which to find the humps
-# Output: CFA dataframe with only the hump measurements
-# Hump criteria: Measurements where all bins 3.5-10 um have higher counts than the
-#    average count for bins 1.5-2.9 um.
-
-def find_humps(cfa_data, min_depth, max_depth):
-    print('\nRemoving PSD hump anomalies.')
-
-    # Subset the CFA data for the selected depth range
-    cfa_data = cfa_data[(cfa_data['Depth (m)'] >= min_depth) & 
-                        (cfa_data['Depth (m)'] <= max_depth)]
-    
-    # Make a copy of CFA data for bins 3.2-10
-    humps_col_list = ['3.2', '3.6', '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10']
-    
-    cfa_humps = cfa_data[humps_col_list]
-    
-    # Make copy of CFA data for bins 1.5-2.9
-    smalls_col_list = ['1.5', '1.6', '1.7', '1.8', '1.9', '2', '2.1', '2.2',
-                       '2.3', '2.4', '2.5', '2.7', '2.9']
-    
-    cfa_smalls = cfa_data[smalls_col_list]  
-    
-    # Get mean concentration for bins 1.5-2.9 per row
-    smalls_mean = cfa_smalls.mean(axis = 'columns')
-    
-    # Subtract the 1.5-2.9 bin mean from the 3.2-10 values
-    cfa_humps = cfa_humps.subtract(smalls_mean, axis = 'index')
-    
-    # If all subtracted values are positive, it is a hump
-    # Mark all positive differences as True
-    criteria = cfa_humps > 0
-    # Check for rows with only True values
-    criteria = criteria.all(axis = 'columns')
-
-    # Subset the CFA data for rows where all values are elevated above small particles
-    cfa_data = cfa_data[criteria]
-    
-    # Count the number of discrete humps
-    # Copy the first two columns of the CFA data into new dataframe
-    humps_diff = cfa_data.loc[:, 'Depth (m)':'ECM'].copy()
-    # Subtract each row from the one before (to get diff in depth)
-    humps_diff = humps_diff.diff()
-    # Subset the diff dataframe for rows where depth changes by 3+ cm
-    # ~3 cm melt resolution. >3 cm diff = new hump event
-    new_humps = humps_diff[(humps_diff['Depth (m)'] >= 0.03)]
-    
-    # Report the number of hump measurements and events
-    choice = input('\tPrint detailed PSD hump anomaly counts? Enter Y or N: ')
-    if choice == 'y' or choice == 'Y':
-        print('\tNumber of measurements:    ', len(cfa_data))
-        print('\tNumber of discrete events: ', len(new_humps))
-    
-    return cfa_data
 #%%
 # Function to calculate Median Absolute Deviation (MAD)
 # Inputs: One-dimensional dataset (like CFA particle concentration or CPP)
