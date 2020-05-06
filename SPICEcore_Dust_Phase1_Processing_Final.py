@@ -15,7 +15,7 @@
 #    2) NaNs liquid conductivity values < 0.6
 #    3) NaNs measurements without positive flow rates
 #    4) NaNs measurements with depth duplicates or decreases
-#    5) NaNs any negative and infinite dust values
+#    5) NaNs measurements with infinite or negative dust values
 #    6) Applies correction to dust data from bad melt day (7/19/2016)
 #    7) Applies timescale to the dust data (annual layers in the Holocene, volcanic tie points for the glacial)
 #    8) Labels all measurements near core breaks
@@ -51,9 +51,7 @@ directory = input('Enter path for SPICEcore dust data: ')
 os.chdir(directory)
 
 # Load CSV CFA data as floats
-cfa = pd.read_csv('CFA_Unfiltered_Synchronized_1_2_20.csv', dtype = 'float')
-# Delete unnecessary column
-del cfa['Unnamed: 0']
+cfa = pd.read_csv('CFA_Unfiltered_Synchronized_1_2_20.csv', dtype = 'float', index_col = 'Unnamed: 0')
 
 # Load other needed files
 volcanic_record = pd.read_excel('Full_final_volcanic_record_7August2019.xlsx')
@@ -67,7 +65,7 @@ dust_events = pd.read_excel('Dust_Events.xlsx')
 # ------------------------------------------------------------------------------------------------------
 
 # Get original length of the CFA dataset, so errors can be tracked
-original_length = cfa['Flow Rate'].count()
+original_length = cfa['1'].count()
 print('\n\n---------------------------------------------------------------------------------')
 print('Filtering errors from liquid conductivity, flow rate, depth, and Abakus data.')
 print('Original CFA dataset length:', original_length)
@@ -88,9 +86,9 @@ for i in range(1, len(cfa['Depth (m)']) - 1):
         # No need to do the other calculations if the slope with the point before is above threshold
         if slope1 <= -threshold_bubbles:  
             slope2 = (cfa['ECM'][i + 1] - cfa['ECM'][i]) / (cfa['Depth (m)'][i + 1] - cfa['Depth (m)'][i]) 
-            if slope2 >= threshold_bubbles: # If slope1 <= 0 and slope2 >= 0, it's a bubble                       
+            if slope2 >= threshold_bubbles: # If slope1 <= 25 and slope2 >= 25, it's a bubble                       
                 bubbles = bubbles + 1
-                cfa.loc[i, 'Flow Rate':'12'] = np.nan # Change all values in row to NaN
+                cfa.loc[i, :] = np.nan # Change all values in row to NaN
                 
 print('\n\tBubble errors:               ', bubbles)
 # Update dataset length
@@ -172,16 +170,22 @@ length = length - len(bad_rows)
 
 # 5) Filter out any infinite or negative Abakus values
 
-print('\tRemoving infinite and negative Abakus values.')
-# Replace 'infinites' with NaNs
-cfa = cfa.replace([np.inf, -np.inf], np.nan)
+# Get indices of rows with infs
+inf_rows = cfa.index[np.isinf(cfa.loc[:,'1':'12']).any(1)]
+# Change values in the bad rows to NaN
+cfa.loc[inf_rows, :] = np.nan
+# Update dataset length 
+length = length - len(inf_rows)
 
-# Get a copy of just the Abakus columns
-abakus = cfa.loc[:,'1':'12'].copy()
-# NaN all negative values (just the values, not the entire row)
-abakus[abakus < 0] = np.nan
-# Replace CFA abakus columns with corrected abakus columns
-cfa.loc[:, '1':'12'] = abakus
+# Select rows where any of the Abakus values are negative
+bad_rows = cfa[(cfa.loc[:, '1':'12'] < 0).any(1) == True]
+# Get indices of these rows
+bad_rows = bad_rows.index
+# Change values in the bad rows to NaN
+cfa.loc[bad_rows, :] = np.nan
+# Update dataset length
+length = length - len(bad_rows)
+print('\tRows with invalid dust data: ', len(bad_rows) + len(inf_rows))
 
 # 6) Apply correction to Abakus data from 7/19/2016
 
@@ -249,18 +253,8 @@ cfa.loc[dust_rows, 'Dust Event?'] = True
 # 10) Calculate particle concentration and CPP
 
 print('Calculating particle concentration and CPP.')
-# Get Boolean values for NaN'd rows
-flow_isnull = cfa['Flow Rate'].isnull()
-# Select the rows that aren't completely NaN'd
-valid_depth = flow_isnull[flow_isnull == False]
-# Get indices of these rows
-valid_depth = list(valid_depth.index.values)
-# Select the non-NaN CFA rows for concentration (ignoring bin 1)
-conc = cfa.loc[valid_depth, '1.1':'12'].copy()
-# Get particle sums for these rows. Use skipna = True so NaN cells count as 0. Need at least 1 value to sum, otherwise NaN
-conc = conc.sum(axis = 1, skipna = True, min_count = 1)
-# Add concentration column to CFA dataframe
-cfa['Sum 1.1-12'] = conc
+# Need at least 1 value to sum (skip NaN rows)
+cfa['Sum 1.1-12'] = cfa.loc[:, '1.1':'12'].sum(axis = 1, min_count = 1)
 
 # Add CPP column to CFA dataframe
 cfa['CPP'] = find_cpp(cfa)
