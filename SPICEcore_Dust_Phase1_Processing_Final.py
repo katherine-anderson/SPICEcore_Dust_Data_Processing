@@ -96,15 +96,11 @@ length = original_length - bubbles
 
 # 2) Filter out data with liquid conductivity values < 0.6
 
-# Drop all good rows, where liquid conductivity is >= 0.6, and count remaining bad rows
-# Drop NaN values from bubble analysis first
-bad_ecm = cfa['ECM'].dropna()
-# Find rows with bad liquid conductivity values-- will NaN the good values
-bad_ecm = bad_ecm.where(bad_ecm < 0.6)
-# Get the indices of the non-NaN (a.k.a., the bad) rows
-bad_rows = bad_ecm[bad_ecm.notnull()]
-bad_rows = list(bad_rows.index.values)
-# Change values in the bad rows to NaN
+# Get bad rows
+bad_rows = cfa[cfa['ECM'] < 0.6]
+# Get indices of bad rows
+bad_rows = bad_rows.index
+# Change values in bad rows to NaN
 cfa.loc[bad_rows, :] = np.nan
 
 print('\tLiquid conductivity < 0.6:   ', len(bad_rows))
@@ -113,14 +109,11 @@ length = length - len(bad_rows)
 
 # 3) Filter out data without positive flow rate values
 
-# Drop all good rows, where flow rate isn't > 0, and count remaining bad rows
-bad_flow = cfa.loc[:, 'Flow Rate'].dropna()
-# Find rows with bad flow rate values-- will NaN the good values
-bad_flow = bad_flow.where(bad_flow <= 0)
-# Get the indices of the non-NaN (a.k.a., the bad) rows
-bad_rows = bad_flow[bad_flow.notnull()]
-bad_rows = list(bad_rows.index.values)
-# Change all values in the bad rows to NaN
+# Get bad rows
+bad_rows = cfa[cfa['Flow Rate'] <= 0]
+# Get indices of bad rows
+bad_rows = bad_rows.index
+# Change values in bad rows to NaN
 cfa.loc[bad_rows, :] = np.nan
 
 print('\tNo/negative flow rate errors:', len(bad_rows))
@@ -193,15 +186,10 @@ print('\tCorrecting units for one melt day.')
 
 cfa = correct_meltday(cfa)
 
-# 7) Interpolate depths and ages for the CFA rows
-
-print('\nInterpolating depth values in blank rows.')
-# Linearly interpolate over NaN'd depths, so final interpolation can use ages
-years_interp = cfa['Depth (m)'].interpolate(method = 'linear')
-cfa['Depth (m)'] = years_interp
+# 7) Interpolate ages for the CFA rows
 
 # Need to interpolate ages before adding in the volcanic events
-print('Interpolating timescale.')
+print('Interpolating depth-age timescale.')
 
 #Interpolate ages for SPICEcore timescale
 years_interp = pd.Series(np.interp(cfa['Depth (m)'], annual_depths['Depth (m)'], annual_depths['Age (Years Before 1950)']))
