@@ -133,22 +133,14 @@ def find_cpp(cfa_data):
                 '3.6', '4', '4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', 
                 '10', '12']
     
-    # Select the non-NaN CFA rows
-    flow_isnull = cfa_data['Flow Rate'].isnull()
-    valid_depth = flow_isnull[flow_isnull == False]
-    # Get the indices of these rows
-    valid_depth = list(valid_depth.index.values)
-    # Select these rows in the CFA data
-    cfa_data = cfa_data.loc[valid_depth].copy() 
-    
     # Sum particle counts for each measurement using the above columns
-    cpp_df['Sum_All'] = cfa_data[col_list].sum(axis = 1)
+    cpp_df['Sum_All'] = cfa_data[col_list].sum(min_count = 1, axis = 1)
 
     # Remake the column lists for only the coarse particles (>= 4.5 um)
     col_list = ['4.5', '5.1', '5.7', '6.4', '7.2', '8.1', '9', '10', '12']
 
     # Sum coarse particle counts for each measurement using the above columns
-    cpp_df['Sum_Coarse'] = cfa_data[col_list].sum(axis = 1)
+    cpp_df['Sum_Coarse'] = cfa_data[col_list].sum(min_count = 1, axis = 1)
     
     # Remove rows with 0 sum_all counts. Don't divide by 0
     cpp_df = cpp_df[cpp_df['Sum_All'] > 0]
