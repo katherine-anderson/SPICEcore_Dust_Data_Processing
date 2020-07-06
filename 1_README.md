@@ -1,7 +1,7 @@
 # SPICEcore Dust Data Processing
 **This repository contains code for processing of the 54.3 ka South Pole Ice Core (SPICEcore) dust flux and dust size distribution records.**
 
-Code was developed in Python version 3.8. Go [here](https://docs.anaconda.com/anaconda/navigator/install/) to install the Anaconda Navigator. Code was originally developed with in the [Spyder](https://www.spyder-ide.org/) application.
+Code was developed in Python version 3.8. Go [here](https://docs.anaconda.com/anaconda/navigator/install/) to install the Anaconda Navigator. Code was originally developed with the [Spyder](https://www.spyder-ide.org/) application.
 
 ## Attribution
 Data processing code was developed in close collaboration with Aaron Chesler for the following dissertation:
@@ -15,7 +15,7 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
     - Removal of melting errors 
     - Removal of contamination
   - To run both phases of data processing, enter 'Y' on the 1st prompt
-  - Select 'N' if you ran the Phase 1 script already and have a "CLEANED_CFA_Phase1..." dataset
+  - Select 'N' on the 1st prompt if you ran the Phase 1 script already and have a "CLEANED_CFA_Phase1..." dataset
   
 - Phase 1
   - Occurs in "SPICEcore_Dust_Phase1_Processing_Final.py"
@@ -32,6 +32,9 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
   - Removes remaining manually-identified issues
   - Prints summary statistics
   - Saves removed data ("BAD_CFA...") and cleaned data ("CLEANED_CFA_Phase2...")
+
+- "SPICEcore_Dust_Processing_Functions_Final.py"
+  - Contains functions used in Phase 1 and Phase 2 data processing
   
 ## Data Files
 Data are stored in a separate repository and are accessible at [this link](https://drive.google.com/drive/folders/1-TpfKOOmJ1e83Tk1YW5FPwn0b5_OXG2A?usp=sharing).
