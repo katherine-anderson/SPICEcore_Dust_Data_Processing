@@ -37,4 +37,4 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
   - Contains functions used in Phase 1 and Phase 2 data processing
   
 ## Data Files
-Data are stored in a separate repository and are accessible at [this link](https://drive.google.com/drive/folders/1-TpfKOOmJ1e83Tk1YW5FPwn0b5_OXG2A?usp=sharing).
+Data are stored in a separate repository and are accessible at [this link](file://dartfs-hpc.dartmouth.edu/rc/home/w/f003qyw/public_html/SPICEcore-Dust-Data-Public/).
