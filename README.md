@@ -37,4 +37,4 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
   - Contains functions used in Phase 1 and Phase 2 data processing
   
 ## Data Files
-Data are stored in a separate repository and are accessible at [this link](https://rcweb.dartmouth.edu/homes/f003qyw/).
+Input and output data are stored in a separate repository and are accessible at [this link](https://rcweb.dartmouth.edu/homes/f003qyw/).
