@@ -1,7 +1,7 @@
 # SPICEcore Dust Data Processing
 **This repository contains code for processing of the 54.3 ka South Pole Ice Core (SPICEcore) dust flux and dust size distribution records.**
 
-Code was developed in Python version 3.8. Go [here](https://docs.anaconda.com/anaconda/navigator/install/) to install the Anaconda Navigator. Code was originally developed with the [Spyder](https://www.spyder-ide.org/) application. Code and data must be downloaded before running.
+Code was developed in Python version 3.8. Go [here](https://docs.anaconda.com/anaconda/navigator/install/) to install the Anaconda Navigator. Code was originally developed with the [Spyder](https://www.spyder-ide.org/) application. Code and data must be downloaded before running. Recommended to save all code files in one folder.
 
 ## Attribution
 Data processing code was developed in close collaboration with Aaron Chesler for the following dissertation:
