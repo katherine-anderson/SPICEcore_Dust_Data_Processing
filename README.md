@@ -23,7 +23,7 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
   - Applies the SP19 timescale (Winski et al., 2019)
   - Adds descriptive columns
   - Calculates dust metrics
-  - Saves cleaned data ("CLEANED_CFA_Phase1...")
+  - Saves cleaned data ("Cleaned_CFA_Phase1...")
   
 - Phase 2
   - Occurs in "Complete_SPICEcore_Dust_Processing_Final.py"
@@ -31,10 +31,10 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
   - Removes outliers
   - Removes remaining manually-identified issues
   - Prints summary statistics
-  - Saves removed data ("BAD_CFA...") and cleaned data ("CLEANED_CFA_Phase2...")
+  - Saves removed data ("Bad_CFA...") and cleaned data ("Cleaned_CFA_Phase2...")
 
 - "SPICEcore_Dust_Processing_Functions_Final.py"
   - Contains functions used in Phase 1 and Phase 2 data processing
   
 ## Data Files
-Data are stored in a separate repository and are accessible at [this link](https://drive.google.com/drive/folders/1-TpfKOOmJ1e83Tk1YW5FPwn0b5_OXG2A?usp=sharing) and [this link](file://dartfs-hpc.dartmouth.edu/rc/home/w/f003qyw/public_html/SPICEcore-Dust-Data-Public/).
+Data are stored in a separate repository and are accessible at [this link](https://rcweb.dartmouth.edu/homes/f003qyw/).
