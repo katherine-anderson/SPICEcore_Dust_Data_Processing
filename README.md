@@ -17,7 +17,7 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
   - To run both phases of data processing, enter 'Y' on the 1st prompt
   - Select 'N' on the 1st prompt if you ran the Phase 1 script already and have a "Cleaned_CFA_Phase1..." dataset
   
-- Phase 1
+- Phase 1 data cleaning
   - Occurs in "SPICEcore_Dust_Phase1_Processing.py"
   - Counts and removes melting errors
   - Applies the SP19 timescale (Winski et al., 2019)
@@ -25,7 +25,7 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
   - Calculates dust metrics
   - Saves cleaned data ("Cleaned_CFA_Phase1...")
   
-- Phase 2
+- Phase 2 data cleaning
   - Occurs in "Complete_SPICEcore_Dust_Processing.py"
   - Preserves data during dust events
   - Gives user the option to preserve data during volcanic events
