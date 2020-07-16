@@ -12,7 +12,7 @@
 #    - Tracks the number of measurements NaN'ed in each step
 #
 #    1) NaNs data from air bubbles bubbles using liquid conductivity values
-#    2) NaNs liquid conductivity values < 0.6
+#    2) NaNs liquid conductivity values < 0.6 us
 #    3) NaNs measurements without positive flow rates
 #    4) NaNs measurements with depth duplicates or decreases
 #    5) NaNs measurements with infinite or negative dust values
@@ -23,7 +23,7 @@
 #   10) Calculates particle concentration and coarse particle percentage (CPP)
 #   11) Exports cleaned dataset to CSV
 #
-# Katie Anderson and Aaron Chesler, 8/21/19
+# Katie Anderson and Aaron Chesler, 7/16/20
 # ------------------------------------------------------------------------------------------------------
 #%%
 # ------------------------------------------------------------------------------------------------------
@@ -58,6 +58,10 @@ volcanic_record = pd.read_excel('Full_final_volcanic_record_7August2019.xlsx')
 breaks = pd.read_excel('core_breaks_full.xlsx')
 annual_depths = pd.read_excel('SPICEcore_Timescale_4_24_2019.xlsx', sheet_name = 'Depth-Age Scale')
 dust_events = pd.read_excel('Dust_Events.xlsx')
+
+# Interpolate ages for glacial volcanic events
+years_interp = pd.Series(np.interp(volcanic_record['Volcanic Depth (m)'], annual_depths['Depth (m)'], annual_depths['Age (Years Before 1950)']))
+volcanic_record.loc[1209:, 'Start Year (b1950)'] = years_interp
 
 #%%
 # ------------------------------------------------------------------------------------------------------
