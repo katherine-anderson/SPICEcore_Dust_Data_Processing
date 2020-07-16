@@ -44,7 +44,7 @@ if choice == '1':
     os.chdir(directory)
     
     # Run Phase 1 processing script
-    exec(open('SPICEcore_Dust_Phase1_Processing_Final.py').read())
+    exec(open('SPICEcore_Dust_Phase1_Processing.py').read())
     
 # Ask user for directory where data are located
 elif choice == '2': 
@@ -54,7 +54,7 @@ elif choice == '2':
     os.chdir(directory)
     
     # Run function definitions script
-    exec(open('SPICEcore_Dust_Processing_Functions_Final.py').read())
+    exec(open('SPICEcore_Dust_Processing_Functions.py').read())
     
     # Get directory for data files
     directory = input('Enter path for SPICEcore dust data: ')
