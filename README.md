@@ -9,7 +9,7 @@ Data processing code was developed in close collaboration with Aaron Chesler for
 Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate Change Events of the Last Glacial Period.* Location: Dartmouth College.
 
 ## Code Files
-- "Complete_SPICEcore_Dust_Processing.py"
+- *"Complete_SPICEcore_Dust_Processing.py"*
   - **Master data processing script. All data processing can be run from this file.**
   - Dust processing has 2 phases
     - Removal of melting errors 
@@ -18,23 +18,23 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
   - Select 'N' on the 1st prompt if you ran the Phase 1 script already and have a "Cleaned_CFA_Phase1..." dataset
   
 - Phase 1 data cleaning
-  - Occurs in "SPICEcore_Dust_Phase1_Processing.py"
+  - Occurs in *"SPICEcore_Dust_Phase1_Processing.py"*
   - Counts and removes melting errors
   - Applies the SP19 timescale (Winski et al., 2019)
   - Adds descriptive columns
   - Calculates dust metrics
-  - Saves cleaned data ("Cleaned_CFA_Phase1...")
+  - Saves cleaned data (*"Cleaned_CFA_Phase1..."*)
   
 - Phase 2 data cleaning
-  - Occurs in "Complete_SPICEcore_Dust_Processing.py"
+  - Occurs in *"Complete_SPICEcore_Dust_Processing.py"*
   - Preserves data during dust events
   - Gives user the option to preserve data during volcanic events
   - Removes outliers
   - Removes remaining manually-identified issues
   - Prints summary statistics
-  - Saves removed data ("Bad_CFA...") and cleaned data ("Cleaned_CFA_Phase2...")
+  - Saves removed data (*"Bad_CFA..."*) and cleaned data (*"Cleaned_CFA_Phase2..."*)
 
-- "SPICEcore_Dust_Processing_Functions.py"
+- *"SPICEcore_Dust_Processing_Functions.py*"
   - Contains functions used in Phase 1 and Phase 2 data processing
   
 ## Data Files
