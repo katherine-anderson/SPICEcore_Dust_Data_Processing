@@ -20,7 +20,7 @@
 #    - Prints summary statistics
 #    - Saves cleaned and 'bad' data to two separate files
 #
-# Aaron Chesler and Katie Anderson, 4/28/20
+# Aaron Chesler and Katie Anderson, 7/16/20
 # ---------------------------------------------------------------------------------------
 #%%
 # ---------------------------------------------------------------------------------------
@@ -174,7 +174,7 @@ if choice == 'Y' or choice == 'y':
     summary_statistics(cfa)
         
 # 5) Export CFA file to CSV. Report final length.
-print('\n\nFinished SPICEcore dust processing.')
+print('\n\nFinished SPICEcore dust data processing.')
 print('\n\tFinal dataset length:', length)
 
 cfa.to_csv('Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
