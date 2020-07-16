@@ -16,7 +16,7 @@
 #  8) select_cfa:                Subset CFA data for given depth or age range
 #  9) summary_statistics:        Print summary statistics for dust concentration & CPP during data cleaning
     
-# Katie Anderson, 4/28/20
+# Katie Anderson, 7/16/20
 # ---------------------------------------------------------------------------------------
 #%%
 # Function to correct time units during melt day 7/19/2019
@@ -188,8 +188,6 @@ def remove_outliers_MAD(cfa_data, dust_indices, volc_indices, background_interva
     
     # Ask the user whether or not to preserve outliers at volcanic events
     choice1 = input('\tPreserve outliers at volcanic events? Enter Y or N: ')
-    # Ask the user whether or not to display # of outliers found & removed
-    choice2 = input('\tPrint detailed MAD outlier counts? Enter Y or N: ')
     
     if choice1 == 'n' or choice1 == 'N':
         # Remove variable has the indices at which to NaN values
@@ -200,20 +198,7 @@ def remove_outliers_MAD(cfa_data, dust_indices, volc_indices, background_interva
     else:
         print('Invalid entry. Defaulted to preserving outliers at volcanic events.')
         remove = overlap.difference(volc_indices)
-    
-    # Count number of discrete volcanic events in the rows we're about to remove
-    # Get a copy of the CFA data with only the 'New Volcanic Event?' column
-    temp_cfa = cfa_data.loc[remove, :].copy()
-    volc_event = temp_cfa[(temp_cfa['New Volcanic Event?'] == True)]
-    if choice2 == 'y' or choice2 == 'Y':
-        print('\tNumber of discrete volcanic events in removed rows:', len(volc_event))
-        
-    # Count number of core breaks in the rows we're about to remove
-    temp_cfa = cfa_data.loc[remove, :].copy()
-    break_outliers = temp_cfa[(temp_cfa['New Break?'] == True)]
-    if choice2 == 'y' or choice2 == 'Y':
-        print('\tNumber of discrete core breaks in removed rows:    ', len(break_outliers))
-        
+       
     return remove
 #%%
 # Function to subset CFA data for given depth or age range
@@ -271,3 +256,5 @@ def summary_statistics(cfa_data):
         print('    MAD:    %.2f' % cpp_mad)
         
     else: print('Input data with particle sum and CPP columns.')
+
+#%%
