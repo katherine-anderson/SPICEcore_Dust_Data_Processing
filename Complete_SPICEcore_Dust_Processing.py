@@ -83,7 +83,7 @@ cfa = cfa_phase1.copy()
 dust_rows = cfa[(cfa['Dust Event?'] == True)].index.values.tolist()
 
 # Get the row indices of all measurements within volcanic events
-# These rows will be preserved during subsequent data cleaning
+# These rows can be preserved during subsequent data cleaning
 volc_rows = cfa[(cfa['Volcanic Event?'] == True)].index.values.tolist()
 
 # Load file with depth intervals for manual data removal
@@ -181,3 +181,4 @@ cfa.to_csv('Cleaned_CFA_Phase2_' + str(date.today()) + '.csv')
 bad_cfa.to_csv('Bad_CFA_Phase2_' + str(date.today()) + '.csv')
 print('\n\tData exported to CSV [Cleaned_CFA_Phase2_...].\n\tBad data saved in separate file [Bad_CFA_Phase2_...].')
 print('-----------------------------------------------------------------------')
+#%%
