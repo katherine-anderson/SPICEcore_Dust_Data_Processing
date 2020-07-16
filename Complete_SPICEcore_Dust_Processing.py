@@ -113,7 +113,6 @@ bad_rows = remove_outliers_MAD(cfa, dust_rows, volc_rows, window, threshold)
 
 # Create empty dataframe to hold bad data
 bad_cfa = pd.DataFrame()
-# bad_cfa['Error Type'] = 'MAD Outlier'
 
 # Add bad data to the bad CFA dataframe
 bad_cfa = bad_cfa.append(cfa.loc[bad_rows, :], sort = False)
