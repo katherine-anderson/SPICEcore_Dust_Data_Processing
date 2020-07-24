@@ -16,13 +16,15 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
     - Removal of contamination
   - To run both phases of data processing, enter 'Y' on the 1st prompt
   - Select 'N' on the 1st prompt if you ran the Phase 1 script already and have a "Cleaned_CFA_Phase1..." dataset
+  - Code will ask the user for paths to the code and data folders
   
 - Phase 1 data cleaning
   - Occurs in *"SPICEcore_Dust_Phase1_Processing.py"*
+  - Code will ask the user for paths to the code and data folders
   - Counts and removes melting errors
   - Applies the SP19 timescale (Winski et al., 2019)
-  - Adds descriptive columns
-  - Calculates dust metrics
+  - Adds descriptive columns (see below)
+  - Calculates dust metrics (see below)
   - Saves cleaned data (*"Cleaned_CFA_Phase1..."*)
   
 - Phase 2 data cleaning
@@ -36,9 +38,9 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
 
 - Functions used in Phase 1 and Phase 2 data cleaning
   - In *"SPICEcore_Dust_Processing_Functions.py*"
-  - Code contains a list of function definitions
+  - Other script files automatically read function definitions from here
   
-- Columns added to the raw data during Phase 1 data cleaning
+- Columns added to the raw data during data cleaning
   - "AgeBP": Age (years before 1950) based on SP19 timescale (Winski et al., 2019)
   - "Break?": "True" if data fall within specified depth range of core breaks
   - "New Break?": "True" for the first row occurring within each core break window (can be used to count core breaks, for example)
