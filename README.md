@@ -41,12 +41,12 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
 - Columns added to the raw data during Phase 1 data cleaning
   - "AgeBP": Age (years before 1950) based on SP19 timescale (Winski et al., 2019)
   - "Break?": "True" if data fall within specified depth range of core breaks
-  - "New Break?": "True" for the first row occurring within 3 cm of core breaks (can be used to count core breaks, for example)
+  - "New Break?": "True" for the first row occurring within each core break window (can be used to count core breaks, for example)
   - "Volcanic Event?": "True" if data fall within specified time range of volcanic events
   - "New Volcanic Event?": "True" for the first row occurring within each volcanic event window (can be used to count volcanic events, for example)
   - "Dust Event?": "True" if data fall within designated depth ranges of dust events which were visible during melting
   - "Sum 1.1-12": Particle number concentration (#/cm<sup>2</sup>/yr)
-  - "CPP": Coarse particle percentage (particles $\geq$ 4.5 um / particles $\geq$ 1 um * 100)
+  - "CPP": Coarse particle percentage (particles ≥4.5 µm / particles ≥1 µm * 100)
   
 ## Data Files
 Input and output data are stored in a separate repository and are accessible at [this link](https://rcweb.dartmouth.edu/homes/f003qyw/).
