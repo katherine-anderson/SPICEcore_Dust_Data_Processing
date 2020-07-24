@@ -49,6 +49,8 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
   - "Dust Event?": "True" if data fall within designated depth ranges of dust events which were visible during melting
   - "Sum 1.1-12": Particle number concentration (#/cm<sup>2</sup>/yr)
   - "CPP": Coarse particle percentage (particles ≥4.5 µm / particles ≥1 µm * 100)
+
+- "Old Scripts" folder: script archive, not required for data processing
   
 ## Data Files
 Input and output data are stored in a separate repository and are accessible at [this link](https://rcweb.dartmouth.edu/homes/f003qyw/).
