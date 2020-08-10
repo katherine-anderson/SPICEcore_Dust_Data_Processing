@@ -8,6 +8,9 @@ Data processing code was developed in close collaboration with Aaron Chesler for
 
 Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate Change Events of the Last Glacial Period.* Location: Dartmouth College.
 
+## Data Files
+Input and output data are stored in a separate repository and are accessible at [this link](https://rcweb.dartmouth.edu/homes/f003qyw/).
+
 ## Code Files
 - *"Complete_SPICEcore_Dust_Processing.py"*
   - **Master data processing script. All data processing can be run from this file.**
@@ -52,5 +55,4 @@ Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate C
 
 - "Old Scripts" folder: script archive, not required for data processing
   
-## Data Files
-Input and output data are stored in a separate repository and are accessible at [this link](https://rcweb.dartmouth.edu/homes/f003qyw/).
+
