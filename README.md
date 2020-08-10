@@ -51,7 +51,7 @@ Input and output data are stored in a separate repository and are accessible at 
   - "New Volcanic Event?": "True" for the first row occurring within each volcanic event window (can be used to count volcanic events, for example)
   - "Dust Event?": "True" if data fall within designated depth ranges of dust events which were visible during melting
   - "Sum 1.1-12": Particle number concentration (# of particles ≥1.1 µm diameter/µL)
-  - "CPP": Coarse particle percentage (particles ≥4.5 µm / particles ≥1 µm * 100)
+  - "CPP": Coarse particle percentage (particles ≥4.5 µm / particles ≥1 µm * 100; after Koffman et al., 2014)
 
 - "Old Scripts" folder: script archive, not required for data processing
   
