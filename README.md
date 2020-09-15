@@ -6,7 +6,8 @@ Code was developed in Python version 3.8. Go [here](https://docs.anaconda.com/an
 ## Attribution
 Data processing code was developed in close collaboration with Aaron Chesler for the following dissertation:
 
-Anderson, Katherine L. (2020). *Atmospheric Dynamics during the Abrupt Climate Change Events of the Last Glacial Period.* Location: Dartmouth College.
+Anderson, Katherine L. (2020). Atmospheric Dynamics during the Abrupt Climate Change Events of the Last Glacial Period, (master's thesis). Retrieved from ProQuest Dissertations Publishing. (Order No. 28089979). Hanover, NH: Dartmouth College.
+Available at [this link] (https://drive.google.com/file/d/1THwkHyc8u7LrJVMey_zb3pkgKeHBiS8l/view?usp=sharing).
 
 ## Data Files
 Input and output data are stored in a separate repository and are accessible at [this link](https://rcweb.dartmouth.edu/homes/f003qyw/).
