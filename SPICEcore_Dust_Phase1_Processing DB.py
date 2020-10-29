@@ -52,7 +52,6 @@ os.chdir(directory)
 
 # Load CSV CFA data as floats
 cfa = pd.read_csv('CFA_Unfiltered_Synchronized_1_2_20.csv', dtype = 'float', index_col = 'Unnamed: 0')
-cfa2 = cfa.copy()
 
 # Load other needed files
 volcanic_record = pd.read_excel('Full_final_volcanic_record_7August2019.xlsx')
@@ -115,14 +114,14 @@ bad_rows = bad_rows.index
 # Change values in bad rows to NaN
 cfa.loc[bad_rows, :] = np.nan
 
-for i in range(0, len(bad_rows) - 1):
+for i in range(0, len(bad_rows)):
     bad_rows_master = bad_rows_master.append({'Row': bad_rows[i], 'Error Type': 'Liquid Conductivity Error'}, ignore_index = True)
 
 
 print('\tLiquid conductivity < 0.6:   ', len(bad_rows))
 # Update dataset length
 length = length - len(bad_rows)
-
+#%%
 # 3) Filter out data without positive flow rate values
 
 # Get bad rows
@@ -132,7 +131,7 @@ bad_rows = bad_rows.index
 # Change values in bad rows to NaN
 cfa.loc[bad_rows, :] = np.nan
 
-for i in range(0, len(bad_rows) - 1):
+for i in range(0, len(bad_rows)):
     bad_rows_master = bad_rows_master.append({'Row': bad_rows[i], 'Error Type': 'Flow Rate Error'}, ignore_index = True)
 
 
@@ -160,8 +159,8 @@ bad_rows = list(bad_rows.index.values)
 # Change ALL values in the bad depth rows to NaN
 cfa.loc[bad_depth, :] = np.nan
 
-for i in range(0, len(bad_rows) - 1):
-    bad_rows_master = bad_rows_master.append({'Row': bad_rows[i], 'Error Type': 'Depth Error 1'}, ignore_index = True)
+for i in range(0, len(bad_rows)):
+    bad_rows_master = bad_rows_master.append({'Row': bad_rows[i], 'Error Type': 'Depth Error'}, ignore_index = True)
 
 
 print('\tDepth not increasing errors: ', len(bad_rows))
@@ -181,7 +180,7 @@ bad_rows = list(bad_rows.index.values)
 # Change values in the bad rows to NaN
 cfa.loc[bad_rows, :] = np.nan
 
-for i in range(0, len(bad_rows) - 1):
+for i in range(0, len(bad_rows)):
     bad_rows_master = bad_rows_master.append({'Row': bad_rows[i], 'Error Type': 'Depth Error'}, ignore_index = True)
 
 print('\tRows without depth data:     ', len(bad_rows))
@@ -197,8 +196,8 @@ cfa.loc[inf_rows, :] = np.nan
 # Update dataset length 
 length = length - len(inf_rows)
 
-for i in range(0, len(inf_rows) - 1):
-    bad_rows_master = bad_rows_master.append({'Row': inf_rows[i], 'Error Type': 'Abakus Error 1'}, ignore_index = True)
+for i in range(0, len(inf_rows)):
+    bad_rows_master = bad_rows_master.append({'Row': inf_rows[i], 'Error Type': 'Abakus Error'}, ignore_index = True)
 
 
 # Select rows where any of the Abakus values are negative
@@ -208,7 +207,7 @@ bad_rows = bad_rows.index
 # Change values in the bad rows to NaN
 cfa.loc[bad_rows, :] = np.nan
 
-for i in range(0, len(bad_rows) - 1):
+for i in range(0, len(bad_rows)):
     bad_rows_master = bad_rows_master.append({'Row': bad_rows[i], 'Error Type': 'Abakus Error'}, ignore_index = True)
 
 # Update dataset length
