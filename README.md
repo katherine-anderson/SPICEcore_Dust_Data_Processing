@@ -56,5 +56,6 @@ Input and output data are stored in a separate repository and are accessible at 
   - "CPP": Coarse particle percentage (particles ≥4.5 µm / particles ≥1 µm * 100; after Koffman et al., 2014)
 
 - "Old Scripts" folder: script archive, not required for data processing
+- "Side Projects" folder: auxillary data processing files, not used in the listed dissertation 
   
 
